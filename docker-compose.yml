@@ -61,8 +61,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Definir JWT_SECRET_KEY en .env (Base64, ver docs)}
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
-      # Origen del SPA (HTTPS); varios orígenes separados por coma si usas www o varios subdominios
-      APP_CORS_ORIGINS: ${APP_CORS_ORIGINS:-https://restogestion.com.ar}
+      # Origen del SPA (HTTPS). Incluir apex y www si usas ambos (CORS es sensible al Origin exacto).
+      APP_CORS_ORIGINS: ${APP_CORS_ORIGINS:-https://restogestion.com.ar,https://www.restogestion.com.ar}
       JAVA_OPTS: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=25.0"
     networks:
       - resto-network
@@ -106,7 +106,7 @@ volumes:
 # POSTGRES_USER=postgres
 # POSTGRES_PASSWORD=un_secreto_largo
 # JWT_SECRET_KEY=<cadena Base64 compatible con HMAC en JwtService>
-# APP_CORS_ORIGINS=https://restogestion.com.ar
+# APP_CORS_ORIGINS=https://restogestion.com.ar,https://www.restogestion.com.ar
 # VITE_API_BASE_URL=https://api.restogestion.com.ar/api
 #
 # Build / arranque:
