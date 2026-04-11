@@ -11,6 +11,11 @@
 #   - 4000 → frontend:80
 #
 # Antes de levantar: crear archivo .env en la raíz (ver comentarios al final) o exportar variables.
+#
+# Memoria (límites por contenedor; requiere Docker Compose v2 / motor reciente):
+#   Total aproximado del stack: ~832 MiB (64 + 256 + 512). Ajusta si tu VPS es muy justo.
+#   512 MiB para TODO el proyecto (db+jvm+nginx) no es viable en producción: Postgres y JVM
+#   compiten; mínimo razonable suele ser ~1–1.5 GiB para el stack completo.
 
 services:
   db:
@@ -30,6 +35,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
 
   backend:
     build:
@@ -49,11 +60,19 @@ services:
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
       # Origen del SPA servido en el puerto 4000 del host (CORS)
       APP_CORS_ORIGINS: ${APP_CORS_ORIGINS:-http://72.60.15.26:4000}
+      # Respeta el límite de memoria del contenedor (cgroup)
+      JAVA_OPTS: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=25.0"
     ports:
       - "8090:8080"
     networks:
       - resto-network
       - proxy_default
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
 
   frontend:
     build:
@@ -69,6 +88,12 @@ services:
     networks:
       - resto-network
       - proxy_default
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+        reservations:
+          memory: 16M
 
 networks:
   resto-network:
