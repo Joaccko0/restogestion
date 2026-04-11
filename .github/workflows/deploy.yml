@@ -1,0 +1,31 @@
+name: Deploy Restogestion to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd /opt/restogestion
+            
+            # 1. Traer los últimos cambios
+            git pull origin main
+            
+            # 2. Reconstruir los contenedores por si hubo cambios en dependencias o código
+            docker-compose build
+            
+            # 3. Levantar/Reiniciar los contenedores nuevos
+            docker-compose up -d
+            
+            # 4. Limpiar imágenes viejas ("dangling") para liberar espacio en disco
+            docker image prune -f
