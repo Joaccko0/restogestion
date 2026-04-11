@@ -18,19 +18,20 @@ export default function LoginPage() {
     const { login } = useAuth();
     const navigate = useNavigate();
 
-    // Valida email en tiempo real: usa validación nativa del navegador
+    // Valida sobre el email ya sin espacios al inicio/fin (evita fallos HTML5 por espacio “fantasma” al pegar/autocompletar)
+    const isValidEmailShape = (value: string) =>
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
     const handleEmailValidation = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const emailInput = e.target;
-        if (!emailInput.validity.valid) {
-            if (emailInput.validity.valueMissing) {
-                emailInput.setCustomValidity('Por favor ingresa un correo electrónico.');
-            } else if (emailInput.validity.typeMismatch) {
-                emailInput.setCustomValidity('Por favor ingresa un correo electrónico válido.');
-            }
+        const trimmed = e.target.value.trim();
+        setEmail(trimmed);
+        if (!trimmed) {
+            e.target.setCustomValidity('Por favor ingresa un correo electrónico.');
+        } else if (!isValidEmailShape(trimmed)) {
+            e.target.setCustomValidity('Por favor ingresa un correo electrónico válido.');
         } else {
-            emailInput.setCustomValidity('');
+            e.target.setCustomValidity('');
         }
-        setEmail(emailInput.value);
     };
 
     // Valida password en tiempo real
@@ -48,11 +49,24 @@ export default function LoginPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(''); // Limpia error anterior
+        const emailClean = email.trim();
+        if (!emailClean) {
+            setError('Por favor ingresa un correo electrónico.');
+            return;
+        }
+        if (!isValidEmailShape(emailClean)) {
+            setError('Por favor ingresa un correo electrónico válido.');
+            return;
+        }
+        if (!password) {
+            setError('Por favor ingresa tu contraseña.');
+            return;
+        }
         setIsLoading(true);
         
         try {
             // Llama login del contexto (comunicación con backend)
-            await login({ email, password });
+            await login({ email: emailClean, password });
             const session = await MeService.getSession();
             navigate(session.superAdmin ? '/admin' : '/dashboard');
         } catch (err) {
@@ -86,7 +100,7 @@ export default function LoginPage() {
                 )}
 
                 {/* Campos de email y contraseña */}
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-6" noValidate>
                     <div className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="email">Correo Electrónico</Label>
