@@ -1,31 +1,132 @@
+# Despliegue por SSH al VPS al hacer push a main (o manualmente).
+#
+# Requisitos en el servidor (${DEPLOY_PATH}):
+#   - Repo clonado, remoto origin apuntando a este repositorio.
+#   - Archivo .env en la raíz del deploy (no commiteado) con POSTGRES_PASSWORD, JWT_SECRET_KEY, etc.
+#   - Usuario SSH con acceso a Docker:
+#       sudo usermod -aG docker TU_USUARIO && newgrp docker
+#     (o sudo sin contraseña para docker; el script prueba `docker` y luego `sudo -n docker`)
+#   - Red NPM: docker network create proxy_default  (si aún no existe)
+#   - Recomendado: Docker Compose V2 (plugin: `docker compose`). Si solo tienes `docker-compose`
+#     v1 (Python), el script lo usa como respaldo; ambos necesitan acceso al socket.
+#
+# El servidor se alinea con GitHub con `git reset --hard` (sin merge). Los cambios locales
+# en archivos rastreados (p. ej. docker-compose.yml editado a mano) se pierden; .env sin trackear no.
+
 name: Deploy Restogestion to VPS
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+
+env:
+  DEPLOY_PATH: /opt/restogestion
 
 jobs:
   deploy:
+    name: Desplegar en VPS
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@master
+      - name: Contexto del despliegue
+        run: |
+          echo "Ref: ${{ github.ref_name }}"
+          echo "SHA: ${{ github.sha }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Evento: ${{ github.event_name }}"
+          echo "Mensaje: ${{ github.event.head_commit.message || '(workflow_dispatch / sin mensaje)' }}"
+
+      - name: SSH — sincronizar repo y levantar Docker Compose
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          DEPLOY_PATH: ${{ env.DEPLOY_PATH }}
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
+          command_timeout: 20m
+          script_stop: true
+          envs: DEPLOY_PATH,GITHUB_REF_NAME
           script: |
-            cd /opt/restogestion
-            
-            # 1. Traer los últimos cambios
-            git pull origin main
-            
-            # 2. Reconstruir los contenedores por si hubo cambios en dependencias o código
-            docker-compose build
-            
-            # 3. Levantar/Reiniciar los contenedores nuevos
-            docker-compose up -d
-            
-            # 4. Limpiar imágenes viejas ("dangling") para liberar espacio en disco
-            docker image prune -f
+            set -euo pipefail
+
+            echo "=========================================="
+            echo " 1/5  Directorio y rama"
+            echo "=========================================="
+            echo "DEPLOY_PATH=${DEPLOY_PATH}"
+            echo "GITHUB_REF_NAME=${GITHUB_REF_NAME}"
+            cd "${DEPLOY_PATH}"
+
+            echo "=========================================="
+            echo " 2/5  Git: fetch + reset (evita conflictos con cambios locales)"
+            echo "=========================================="
+            git fetch origin
+            git reset --hard "origin/${GITHUB_REF_NAME}"
+            git rev-parse --short HEAD
+
+            echo "=========================================="
+            echo " 3/5  Docker CLI (grupo docker o sudo -n)"
+            echo "=========================================="
+            if docker info >/dev/null 2>&1; then
+              DOCKER=(docker)
+              echo "Usando: docker (sin sudo)"
+            elif sudo -n docker info >/dev/null 2>&1; then
+              DOCKER=(sudo docker)
+              echo "Usando: sudo docker"
+            else
+              echo "ERROR: Sin acceso a /var/run/docker.sock"
+              echo "En el VPS ejecuta (una vez): sudo usermod -aG docker \"${USER}\""
+              echo "Cierra sesión y vuelve a entrar, o: newgrp docker"
+              exit 1
+            fi
+
+            compose() {
+              if "${DOCKER[@]}" compose version >/dev/null 2>&1; then
+                "${DOCKER[@]}" compose "$@"
+              elif command -v docker-compose >/dev/null 2>&1; then
+                if docker info >/dev/null 2>&1; then
+                  docker-compose "$@"
+                else
+                  sudo -n docker-compose "$@"
+                fi
+              else
+                echo "ERROR: No se encontró 'docker compose' ni 'docker-compose'"
+                exit 1
+              fi
+            }
+
+            echo "=========================================="
+            echo " 4/5  Build e inicio de contenedores"
+            echo "=========================================="
+            compose version || true
+            compose build --pull
+            compose up -d --remove-orphans
+
+            echo "=========================================="
+            echo " 5/5  Limpieza y estado"
+            echo "=========================================="
+            "${DOCKER[@]}" image prune -f
+            compose ps -a
+
+            echo "Despliegue remoto completado."
+
+      - name: OK — SSH finalizó correctamente
+        if: success()
+        run: echo "Pipeline remoto sin errores."
+
+      - name: Error — revisar logs del paso SSH
+        if: failure()
+        env:
+          DEPLOY_PATH: ${{ env.DEPLOY_PATH }}
+        run: |
+          echo "::error::Falló el despliegue. Comprueba en el VPS:" >&2
+          echo "  - Usuario en grupo docker (o sudo -n docker)" >&2
+          echo "  - Red externa: docker network ls | grep proxy_default" >&2
+          echo "  - Existe ${DEPLOY_PATH} y el remoto git es correcto" >&2
+          exit 1
