@@ -102,10 +102,12 @@ jobs:
             }
 
             echo "=========================================="
-            echo " 4/5  Build e inicio de contenedores"
+            echo " 4/5  Build, bajar stack anterior e iniciar contenedores"
             echo "=========================================="
             compose version || true
             compose build --pull
+            # Evita conflictos de nombre al recrear (contenedores viejos u otro prefijo de proyecto)
+            compose down --remove-orphans
             compose up -d --remove-orphans
 
             echo "=========================================="
@@ -129,4 +131,5 @@ jobs:
           echo "  - Usuario en grupo docker (o sudo -n docker)" >&2
           echo "  - Red externa: docker network ls | grep proxy_default" >&2
           echo "  - Existe ${DEPLOY_PATH} y el remoto git es correcto" >&2
+          echo "  - Conflicto de nombres Docker: en el VPS, cd ${DEPLOY_PATH} && docker compose down && docker compose up -d" >&2
           exit 1
