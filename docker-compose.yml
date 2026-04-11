@@ -23,7 +23,7 @@ services:
     container_name: restogestion-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-pizzeria_db}
+      POSTGRES_DB: ${POSTGRES_DB:-restogestion}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Definir POSTGRES_PASSWORD en .env}
     volumes:
@@ -31,7 +31,7 @@ services:
     networks:
       - resto-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-pizzeria_db}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-restogestion}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -53,7 +53,7 @@ services:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-pizzeria_db}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-restogestion}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Definir JWT_SECRET_KEY en .env (Base64, ver docs)}
@@ -105,7 +105,7 @@ volumes:
   restogestion_pgdata:
 
 # --- Variables recomendadas en .env (raíz del repo) ---
-# POSTGRES_DB=pizzeria_db
+# POSTGRES_DB=restogestion
 # POSTGRES_USER=postgres
 # POSTGRES_PASSWORD=un_secreto_largo
 # JWT_SECRET_KEY=<cadena Base64 compatible con HMAC en JwtService>
