@@ -4,13 +4,13 @@
 #
 # Redes:
 #   - resto-network: red interna entre db, backend y frontend
-#   - proxy_default: red externa (Nginx Proxy Manager) — debe existir: docker network create proxy_default
+#   - proxy_default: red compartida con Nginx Proxy Manager (TLS en NPM, no en estos contenedores)
 #
-# Puertos host (acceso temporal por IP hasta propagar DNS):
-#   - 8090 → backend:8080
-#   - 4000 → frontend:80
+# Tráfico público: HTTPS vía NPM (restogestion.com.ar → frontend, api.restogestion.com.ar → backend).
+# Los servicios backend y frontend NO publican puertos en el host; NPM los alcanza por nombre
+# de contenedor en proxy_default (p. ej. restogestion-frontend:80, restogestion-backend:8080).
 #
-# Antes de levantar: crear archivo .env en la raíz (ver comentarios al final) o exportar variables.
+# Antes de levantar: .env en la raíz (ver comentarios al final) o exportar variables.
 #
 # Memoria (límites por contenedor; requiere Docker Compose v2 / motor reciente):
 #   Total aproximado del stack: ~832 MiB (64 + 256 + 512). Ajusta si tu VPS es muy justo.
@@ -58,12 +58,9 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Definir JWT_SECRET_KEY en .env (Base64, ver docs)}
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
-      # Origen del SPA servido en el puerto 4000 del host (CORS)
-      APP_CORS_ORIGINS: ${APP_CORS_ORIGINS:-http://72.60.15.26:4000}
-      # Respeta el límite de memoria del contenedor (cgroup)
+      # Origen del SPA (HTTPS); varios orígenes separados por coma si usas www o varios subdominios
+      APP_CORS_ORIGINS: ${APP_CORS_ORIGINS:-https://restogestion.com.ar}
       JAVA_OPTS: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=25.0"
-    ports:
-      - "8090:8080"
     networks:
       - resto-network
       - proxy_default
@@ -79,12 +76,9 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        # Baked en build: URL pública del API (mismo host, puerto 8090)
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://72.60.15.26:8090/api}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-https://api.restogestion.com.ar/api}
     container_name: restogestion-frontend
     restart: unless-stopped
-    ports:
-      - "4000:80"
     networks:
       - resto-network
       - proxy_default
@@ -109,8 +103,8 @@ volumes:
 # POSTGRES_USER=postgres
 # POSTGRES_PASSWORD=un_secreto_largo
 # JWT_SECRET_KEY=<cadena Base64 compatible con HMAC en JwtService>
-# APP_CORS_ORIGINS=http://72.60.15.26:4000
-# VITE_API_BASE_URL=http://72.60.15.26:8090/api
+# APP_CORS_ORIGINS=https://restogestion.com.ar
+# VITE_API_BASE_URL=https://api.restogestion.com.ar/api
 #
 # Build / arranque:
 #   docker compose build --no-cache
