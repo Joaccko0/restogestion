@@ -1,5 +1,9 @@
 package com.pizzeria.backend.model;
 
+import java.time.LocalDate;
+
+import com.pizzeria.backend.model.enums.BusinessBillingStatus;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -14,4 +18,12 @@ public class Business {
     private Long id;
 
     private String name;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private BusinessBillingStatus billingStatus = BusinessBillingStatus.GRATIS;
+
+    /** Obligatorio si el negocio no es GRATIS (fin de período pagado). */
+    private LocalDate expiresAt;
 }

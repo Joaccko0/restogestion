@@ -1,6 +1,6 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Edit2, Trash2, Phone, Mail } from 'lucide-react';
+import { Edit2, Trash2 } from 'lucide-react';
 import type { Supplier } from '../types/supplier.types';
 
 interface SupplierTableProps {

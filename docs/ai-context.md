@@ -1,5 +1,7 @@
 # Proyecto Pizzeria 1.0 - Contexto para futuras IA
 
+Índice de documentación mantenida en el repo: [docs/README.md](./README.md) (arquitectura, API, setup, frontend, seguridad).
+
 ## Visión general
 - Monorepo con backend Spring Boot (`backend/`) y frontend React + Vite + TypeScript + Tailwind/shadcn (`frontend/`).
 - Objetivo: gestión de pedidos, combos, productos, clientes y direcciones, con creación de pedidos desde un modal amplio.
@@ -10,13 +12,13 @@
 - Paquetes principales esperados (revisar en árbol `com/pizzeria/backend`):
   - `auth/` (probable JWT/autenticación), `config/` (configuración), `controller/`, `dto/`, `mapper/`, `model/`, `repository/`, `service/`.
 - Tests en [backend/src/test/java/com/pizzeria/backend](backend/src/test/java/com/pizzeria/backend).
-- Para levantar local: revisar `backend/docker-compose.yml` y `start.sh` (corre todo el stack).
+- Para levantar local: PostgreSQL con `docker-compose.yml` en la **raíz del repo**; arranque conjunto con `start.ps1` / `start.bat` (Windows) o backend/frontend por separado.
 
 ## Frontend (React + Vite + Tailwind/shadcn)
 - Entrada: [frontend/src/main.tsx](frontend/src/main.tsx), App en [frontend/src/App.tsx](frontend/src/App.tsx).
 - Estilos: Tailwind config en [frontend/tailwind.config.ts](frontend/tailwind.config.ts), CSS base en [frontend/src/index.css](frontend/src/index.css) y [frontend/src/App.css](frontend/src/App.css).
 - API client base: [frontend/src/api/client.ts](frontend/src/api/client.ts).
-- Contextos: [frontend/src/context/AuthContext.tsx](frontend/src/context/AuthContext.tsx), [frontend/src/context/BusinessContext.tsx](frontend/src/context/BusinessContext.tsx).
+- Contextos: [frontend/src/context/AuthContext.tsx](frontend/src/context/AuthContext.tsx), [frontend/src/context/BusinessContext.tsx](frontend/src/context/BusinessContext.tsx) (carga `GET /api/me/businesses` y usa el primer negocio; `VITE_API_BASE_URL` en [frontend/src/api/client.ts](frontend/src/api/client.ts)).
 - Hooks de datos: [frontend/src/hooks/useProducts.ts](frontend/src/hooks/useProducts.ts), [frontend/src/hooks/useCombos.ts](frontend/src/hooks/useCombos.ts), [frontend/src/hooks/useOrders.ts](frontend/src/hooks/useOrders.ts), [frontend/src/hooks/useSearch.ts](frontend/src/hooks/useSearch.ts).
 - Servicios: [frontend/src/services/inventory.service.ts](frontend/src/services/inventory.service.ts), [frontend/src/services/order.service.ts](frontend/src/services/order.service.ts).
 - Tipos: [frontend/src/types/inventory.types.ts](frontend/src/types/inventory.types.ts), [frontend/src/types/order.types.ts](frontend/src/types/order.types.ts), [frontend/src/types/auth.types.ts](frontend/src/types/auth.types.ts).
@@ -182,15 +184,16 @@ Estructura de 4 entidades principales:
 - Grillas: se usan `grid-cols-2` en el modal para listas y opciones; scroll area fija en productos/combos.
 
 ## Cómo levantar
-- Script raíz: `./start.sh` (ejecutado exitosamente según último comando). Verifica si levanta docker + backend + frontend.
-- Frontend dev: `cd frontend && npm install && npm run dev` (Vite).
-- Backend dev: `cd backend && ./mvnw spring-boot:run` (revisar perfiles/vars en `application.yaml`).
+- Windows: `.\start.ps1` o `start.bat` desde la raíz (backend + frontend; logs en `%TEMP%`). Requiere JDK 21 (`scripts/JavaHome.ps1` opcional).
+- Base de datos: `docker compose up -d` (raíz) antes del backend si usas el Postgres del compose.
+- Frontend dev: `cd frontend && npm install && npm run dev` (Vite, puerto 5173).
+- Backend dev: `cd backend && ./mvnw.cmd spring-boot:run` (Windows) o `./mvnw spring-boot:run` (Unix). Ver `application.yaml` y [SETUP_AND_RUN.md](./SETUP_AND_RUN.md).
 
 ## Preguntas abiertas / pendientes típicos
 - Reglas de negocio completas de estados de pedido (revisar Kanban y API de orders).
-- Autenticación exacta (JWT/roles) en backend y su consumo en `AuthContext`.
-- Deploy/config de base de datos (ver `docker-compose.yml` y `application.yaml`).
-- Endpoints disponibles y contratos: revisar controllers/dto en backend.
+- Autorización fina por rol (`OWNER`/`EMPLOYEE`) si hace falta más allá del filtro usuario ↔ `businessId`.
+- Deploy/config de base de datos: [SETUP_AND_RUN.md](./SETUP_AND_RUN.md), perfil `prod`, `docker-compose.yml` (raíz), `application.yaml`.
+- Endpoints y contratos: [API_REFERENCE.md](./API_REFERENCE.md) y paquete `dto` en backend.
 
 ## Tip para futuras IA
 - Mantener consistencia de colores y anchos en modales; el ancho depende de las clases pasadas a `DialogContent`.

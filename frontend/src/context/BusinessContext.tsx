@@ -1,44 +1,57 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-
-// Definimos la estructura de un Negocio
-interface Business {
-    id: number;
-    name: string;
-}
+import { useAuth } from './AuthContext';
+import { MeService, type BusinessSummary } from '../services/me.service';
 
 interface BusinessContextType {
-    currentBusiness: Business | null;
+    currentBusiness: BusinessSummary | null;
     isLoading: boolean;
 }
 
 const BusinessContext = createContext<BusinessContextType | undefined>(undefined);
 
+/**
+ * Carga el negocio actual desde GET /api/me/businesses (primer negocio del usuario; piloto 1 cliente).
+ */
 export const BusinessProvider = ({ children }: { children: ReactNode }) => {
-    const [currentBusiness, setCurrentBusiness] = useState<Business | null>(null);
+    const { token, isAuthenticated } = useAuth();
+    const [currentBusiness, setCurrentBusiness] = useState<BusinessSummary | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const fetchUserBusinesses = async () => {
-            try {
-                // TODO: En el futuro, aquí llamaríamos a un endpoint real: GET /api/users/me/businesses
-                // Por ahora, SIMULAMOS que el backend nos devuelve el negocio que cargamos manualmente
-                // OJO: Para que esto sea real, deberías crear ese endpoint en Java. 
-                // Pero para avanzar YA, vamos a "hardcodear" el objeto si el usuario está logueado.
-                
-                // Opción A (Hardcode temporal para MVP Rápido):
-                const mockBusiness = { id: 2, name: 'Pizzeria La Fabrica' }; 
-                setCurrentBusiness(mockBusiness);
+        if (!isAuthenticated || !token) {
+            setCurrentBusiness(null);
+            setIsLoading(false);
+            return;
+        }
 
+        let cancelled = false;
+
+        const load = async () => {
+            setIsLoading(true);
+            try {
+                const list = await MeService.getMyBusinesses();
+                if (!cancelled) {
+                    setCurrentBusiness(list.length > 0 ? list[0] : null);
+                }
             } catch (error) {
-                console.error("Error cargando negocio", error);
+                console.error('Error cargando negocios del usuario', error);
+                if (!cancelled) {
+                    setCurrentBusiness(null);
+                }
             } finally {
-                setIsLoading(false);
+                if (!cancelled) {
+                    setIsLoading(false);
+                }
             }
         };
 
-        fetchUserBusinesses();
-    }, []);
+        void load();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [token, isAuthenticated]);
 
     return (
         <BusinessContext.Provider value={{ currentBusiness, isLoading }}>

@@ -17,9 +17,6 @@ import { formatCurrency } from '../lib/utils';
 import type { OrderResponse, PaymentMethod, DeliveryMethod, PaymentStatus } from '../types/order.types';
 import {
     OrderStatusLabels,
-    PaymentStatusLabels,
-    PaymentMethodLabels,
-    DeliveryMethodLabels,
     PaymentMethod as PM,
     DeliveryMethod as DM,
     PaymentStatus as PS

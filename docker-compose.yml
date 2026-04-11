@@ -1,0 +1,19 @@
+# PostgreSQL para desarrollo local (coincide con application.yaml)
+# Uso: docker compose up -d
+# Luego arranca el backend con start.ps1 o mvnw spring-boot:run
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: pizzeria-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: pizzeria_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pizzeria_pgdata:/var/lib/postgresql/data
+
+volumes:
+  pizzeria_pgdata:

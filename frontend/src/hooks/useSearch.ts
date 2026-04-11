@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 
 /**
  * Hook para filtrar/buscar en arrays de forma eficiente

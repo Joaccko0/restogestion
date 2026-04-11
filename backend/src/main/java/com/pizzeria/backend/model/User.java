@@ -2,6 +2,7 @@ package com.pizzeria.backend.model;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -40,18 +41,28 @@ public class User implements UserDetails {
 
     private String password;
 
+    /** Si es true, solo puede usar el panel /api/admin (un único usuario en el sistema). */
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean superAdmin = false;
+
     // Relación Many-to-Many con Business a través de la tabla de roles
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<UserBusinessRole> roles;
 
     // --- MÉTODOS DE USER DETAILS ---
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Aquí convertimos tus roles a "Autoridades" que Spring entienda.
-        // Por ahora, tomamos el primer rol como ejemplo, luego lo haremos más complejo.
-        if (roles == null || roles.isEmpty()) return List.of();
-        return List.of(new SimpleGrantedAuthority("ROLE_" + roles.get(0).getRole().name()));
+        if (Boolean.TRUE.equals(superAdmin)) {
+            return List.of(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN"));
+        }
+        if (roles == null || roles.isEmpty()) {
+            return List.of();
+        }
+        return roles.stream()
+                .map(r -> new SimpleGrantedAuthority("ROLE_" + r.getRole().name()))
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     @Override

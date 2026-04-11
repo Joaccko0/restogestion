@@ -6,12 +6,10 @@
 import { Clock, Package, CreditCard, MapPin, User, Check } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { formatCurrency } from '../lib/utils';
 import type { OrderResponse } from '../types/order.types';
 import {
     PaymentMethodLabels,
     DeliveryMethodLabels,
-    PaymentStatusLabels
 } from '../types/order.types';
 
 interface OrderCardProps {

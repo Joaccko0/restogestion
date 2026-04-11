@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Trash2, ShoppingCart, DollarSign, Package } from 'lucide-react';
 import type { Expense, ExpenseRequest, ExpenseItemRequest } from '../types/expense.types';
 import type { Supplier } from '../types/supplier.types';

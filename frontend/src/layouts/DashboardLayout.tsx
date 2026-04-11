@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useBusiness } from '../context/BusinessContext';
+import { MeService } from '../services/me.service';
 import { 
     LayoutDashboard, 
     Pizza, 
@@ -17,12 +18,34 @@ import { Button } from '@/components/ui/button';
 
 export default function DashboardLayout() {
     const { logout } = useAuth();
+    const navigate = useNavigate();
     const { currentBusiness } = useBusiness();
     const location = useLocation(); // Para saber en qué ruta estamos y pintarla de color
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-    // Definimos las opciones del menú
-    const menuItems = [
+    useEffect(() => {
+        MeService.getSession()
+            .then((s) => {
+                if (s.superAdmin) {
+                    navigate('/admin', { replace: true });
+                }
+            })
+            .catch(() => {});
+    }, [navigate]);
+
+    useEffect(() => {
+        if (!currentBusiness || currentBusiness.billingStatus !== 'VENCIDO') {
+            return;
+        }
+        if (!location.pathname.startsWith('/dashboard/stats')) {
+            navigate('/dashboard/stats', { replace: true });
+        }
+    }, [currentBusiness, location.pathname, navigate]);
+
+    const vencido = currentBusiness?.billingStatus === 'VENCIDO';
+
+    // Definimos las opciones del menú (solo estadísticas si suscripción vencida)
+    const fullMenu = [
         { label: 'Panel Principal', icon: LayoutDashboard, path: '/dashboard' },
         { label: 'Historial de Pedidos', icon: History, path: '/dashboard/history' },
         { label: 'Estadísticas', icon: BarChart3, path: '/dashboard/stats' },
@@ -30,6 +53,9 @@ export default function DashboardLayout() {
         { label: 'Clientes', icon: Users, path: '/dashboard/customers' },
         { label: 'Gastos', icon: DollarSign, path: '/dashboard/expenses' },
     ];
+    const menuItems = vencido
+        ? fullMenu.filter((i) => i.path === '/dashboard/stats')
+        : fullMenu;
 
     return (
         <div className="flex h-screen bg-gray-50 text-gray-900">
@@ -111,6 +137,27 @@ export default function DashboardLayout() {
 
                 {/* ÁREA DE CONTENIDO (Aquí se renderizan las páginas) */}
                 <main className="flex-1 overflow-y-auto p-8">
+                    {currentBusiness?.billingStatus === 'VENCIDO' && (
+                        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                            Suscripción vencida. Solo puedes consultar estadísticas.
+                        </div>
+                    )}
+                    {currentBusiness?.warningExpirySoon &&
+                        currentBusiness.billingStatus === 'VIGENTE' && (
+                            <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                                Tu suscripción vence en menos de 5 días
+                                {currentBusiness.expiresAt
+                                    ? ` (fecha fin: ${currentBusiness.expiresAt})`
+                                    : ''}
+                                .
+                            </div>
+                        )}
+                    {currentBusiness?.billingStatus === 'MOROSO' && (
+                        <div className="mb-4 rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-900">
+                            Período de mora: te quedan {currentBusiness.morosoGraceDaysLeft} días de gracia antes
+                            del corte del servicio.
+                        </div>
+                    )}
                     <Outlet /> {/* <-- AQUÍ VA LO QUE CAMBIA (Productos, Dashboard, etc) */}
                 </main>
             </div>

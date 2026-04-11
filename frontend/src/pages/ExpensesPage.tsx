@@ -3,7 +3,7 @@ import { useBusiness } from '../context/BusinessContext';
 import { useExpenses } from '../hooks/useExpenses';
 import { useSuppliers } from '../hooks/useSuppliers';
 import { useSupplies } from '../hooks/useSupplies';
-import { Plus, DollarSign, TrendingUp, Calendar, Package } from 'lucide-react';
+import { Plus, DollarSign, Calendar, Package } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 
 import { ExpenseForm } from '../components/ExpenseForm';

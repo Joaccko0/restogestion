@@ -36,8 +36,8 @@ export default function OrdersPage() {
         cancelOrder
     } = useOrders(currentBusiness?.id);
 
-    const { products } = useProducts(currentBusiness?.id || -1);
-    const { combos } = useCombos(currentBusiness?.id || -1);
+    const { products } = useProducts(currentBusiness?.id ?? null);
+    const { combos } = useCombos(currentBusiness?.id ?? null);
     const { customers, loadCustomers } = useCustomers(currentBusiness?.id || null);
 
     // Gestión de CashShift

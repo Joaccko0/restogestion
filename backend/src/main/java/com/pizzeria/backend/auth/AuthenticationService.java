@@ -25,17 +25,15 @@ public class AuthenticationService {
     final PasswordEncoder passwordEncoder;
 
     public AuthenticationResponse login(LoginRequest request) {
-        // 1. Este método hace la magia: valida email y password (encriptado).
-        // Si la contraseña está mal, lanza una excepción automáticamente.
+        String email = normalizeEmail(request.email());
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.email(),
+                        email,
                         request.password()
                 )
         );
 
-        // 2. Si pasó el paso 1, el usuario es correcto. Lo buscamos.
-        var user = userRepository.findByEmail(request.email())
+        var user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
 
         // 3. Generamos el token
@@ -45,17 +43,15 @@ public class AuthenticationService {
     }
 
     public AuthenticationResponse register(RegisterRequest request) {
-        // 1. Validar si existe usando isPresent()
-        if (userRepository.findByEmail(request.email()).isPresent()) {
-            // Esto devolverá un error 500 por defecto, luego podemos manejarlo mejor
+        String email = normalizeEmail(request.email());
+        if (userRepository.findByEmailIgnoreCase(email).isPresent()) {
             throw new IllegalArgumentException("El email ya está registrado");
         }
 
-        // 2. Crear el Usuario
         var user = User.builder()
                 .firstName(request.firstName())
                 .lastName(request.lastName())
-                .email(request.email())
+                .email(email)
                 .password(passwordEncoder.encode(request.password()))
                 .build();
         
@@ -67,5 +63,9 @@ public class AuthenticationService {
         
         // 5. Devolver Token
         return new AuthenticationResponse(jwtToken);
+    }
+
+    private static String normalizeEmail(String email) {
+        return email == null ? "" : email.trim().toLowerCase();
     }
 }

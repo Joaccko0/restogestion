@@ -4,6 +4,8 @@
 **Fecha Completación**: 5 de Febrero, 2026  
 **Status**: ✅ **COMPLETADO**
 
+Para **documentación del sistema completo** (arquitectura, instalación, API REST, dominio, frontend y seguridad), abre **[README.md](./README.md)** en esta carpeta. Este archivo se centra en la feature **CashShift**.
+
 ---
 
 ## 📖 Guía de Lectura

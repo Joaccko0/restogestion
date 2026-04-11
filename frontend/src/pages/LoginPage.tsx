@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { MeService } from '../services/me.service';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Mail, Lock, Pizza } from "lucide-react";
-import { Link } from "react-router-dom";
-
 export default function LoginPage() {
     // Campos del formulario
     const [email, setEmail] = useState('');
@@ -54,8 +53,8 @@ export default function LoginPage() {
         try {
             // Llama login del contexto (comunicación con backend)
             await login({ email, password });
-            // Si no lanzó error, el JWT fue guardado; navega al dashboard
-            navigate('/dashboard'); 
+            const session = await MeService.getSession();
+            navigate(session.superAdmin ? '/admin' : '/dashboard');
         } catch (err) {
             // Si falla (credenciales inválidas, servidor offline, etc.)
             setError('Credenciales inválidas. Verifica tus datos.');
@@ -145,14 +144,6 @@ export default function LoginPage() {
                     </Button>
                 </form>
 
-                {/* Link a registro para nuevos usuarios */}
-                <div className="text-center text-sm">
-                    <span className="text-muted-foreground">¿No tienes una cuenta? </span>
-                    <Link to="/register" className="font-medium text-primary hover:underline underline-offset-4">
-                        Regístrate aquí
-                    </Link>
-                </div>
-              
             </div>
         </div>
     );
