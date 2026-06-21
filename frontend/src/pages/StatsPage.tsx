@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatCurrency } from '../lib/utils';
+import { getArgentinaHour, parseApiDateTime } from '../lib/datetime';
 import { getOrderPaymentBreakdown } from '../lib/orderPayments';
 import {
     addManualCategorySales,
@@ -58,7 +59,7 @@ const toDateEnd = (dateString: string) => {
 
 function shiftInRange(shift: CashShiftResponse, start: Date | null, end: Date | null) {
     const ref = shift.endDate || shift.startDate;
-    const d = new Date(ref);
+    const d = parseApiDateTime(ref);
     if (Number.isNaN(d.getTime())) return false;
     if (start && d < start) return false;
     if (end && d > end) return false;
@@ -222,7 +223,7 @@ export default function StatsPage() {
             if (order.cashShiftId != null && shiftIdsInRange.has(order.cashShiftId)) {
                 return true;
             }
-            const d = new Date(order.createdAt);
+            const d = parseApiDateTime(order.createdAt);
             if (Number.isNaN(d.getTime())) return false;
             if (dateStart && d < dateStart) return false;
             if (dateEnd && d > dateEnd) return false;
@@ -358,8 +359,8 @@ export default function StatsPage() {
         nonCancelled
             .filter((o) => !manualShiftIds.has(o.cashShiftId ?? -1))
             .forEach((order) => {
-                const d = new Date(order.createdAt);
-                if (!Number.isNaN(d.getTime())) hourCounts[d.getHours()] += 1;
+                const d = parseApiDateTime(order.createdAt);
+                if (!Number.isNaN(d.getTime())) hourCounts[getArgentinaHour(order.createdAt)] += 1;
             });
 
         return {

@@ -27,6 +27,7 @@ import {
     Trash2,
 } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
+import { formatDateTimeAR } from '../lib/datetime';
 import type {
     OrderResponse,
     PaymentMethod,
@@ -103,6 +104,7 @@ export function OrderDetailsDialog({
     const [addressId, setAddressId] = useState<number | undefined>();
     const [manualAddress, setManualAddress] = useState('');
     const [showAddressSelector, setShowAddressSelector] = useState(false);
+    const [showCustomerPicker, setShowCustomerPicker] = useState(false);
     const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
     const [deliveryFeeInput, setDeliveryFeeInput] = useState('');
     const [cart, setCart] = useState<EditCartItem[]>([]);
@@ -124,7 +126,12 @@ export function OrderDetailsDialog({
                     : ''
             );
             setShowAddressSelector(false);
-            setDeliveryFeeInput(String(order.deliveryFee ?? 0));
+            setShowCustomerPicker(false);
+            setDeliveryFeeInput(
+                order.deliveryFee != null && order.deliveryFee > 0
+                    ? String(order.deliveryFee)
+                    : ''
+            );
 
             const nextCart = orderItemsToCart(order.items);
             setCart(nextCart);
@@ -160,10 +167,12 @@ export function OrderDetailsDialog({
     const isPaid = paymentStatus === PS.PAID;
     const isDelivery = deliveryMethod === DM.DELIVERY;
     const hasDeliveryDestination = isDelivery && (!!addressId || !!manualAddress.trim());
-    const createdDate = new Date(order.createdAt).toLocaleString('es-AR', {
-        dateStyle: 'short',
-        timeStyle: 'short',
-    });
+    const createdDate = formatDateTimeAR(order.createdAt);
+    const canAssignCustomer =
+        order.orderStatus !== 'DELIVERED' &&
+        order.orderStatus !== 'CANCELLED' &&
+        !customerId &&
+        !order.customerName;
 
     const paymentLinesSum = paymentLines.reduce(
         (sum, line) => sum + (parseFloat(line.amount) || 0),
@@ -607,7 +616,27 @@ export function OrderDetailsDialog({
                                 </>
                             )}
 
-                            {(customerId || order.customerName) && !isDelivery && (
+                            {canAssignCustomer ? (
+                                <div className="col-span-2 rounded-xl border border-dashed border-[#E5D9D1] bg-[#F2EDE4]/30 p-3 space-y-2">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 flex items-center gap-1">
+                                            <User className="w-3 h-3" />
+                                            Cliente
+                                        </span>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="outline"
+                                            className="h-8 border-[#E5D9D1] text-[#F24452]"
+                                            onClick={() => setShowCustomerPicker(true)}
+                                        >
+                                            <User className="h-3.5 w-3.5 mr-1" />
+                                            Asignar cliente
+                                        </Button>
+                                    </div>
+                                    <p className="text-sm text-gray-500">Sin cliente asignado</p>
+                                </div>
+                            ) : (customerId || order.customerName) ? (
                                 <div className="col-span-2 space-y-1">
                                     <div className="text-xs text-gray-500 flex items-center gap-1">
                                         <User className="w-3 h-3" />
@@ -618,7 +647,7 @@ export function OrderDetailsDialog({
                                             order.customerName}
                                     </div>
                                 </div>
-                            )}
+                            ) : null}
                         </div>
 
                         <Separator />
@@ -685,6 +714,28 @@ export function OrderDetailsDialog({
                         addressId: data.addressId,
                         manualAddress: data.manualAddress,
                     });
+                }}
+                onCustomersChanged={onCustomersChanged}
+            />
+
+            <CustomerAddressSelector
+                open={showCustomerPicker}
+                onOpenChange={setShowCustomerPicker}
+                customers={customers}
+                businessId={businessId}
+                isDelivery={false}
+                initialCustomerId={customerId}
+                onConfirm={(data) => {
+                    if (!data.customerId) return;
+                    void (async () => {
+                        const result = await onUpdateDetails?.(order.id, {
+                            customerId: data.customerId,
+                        });
+                        if (result !== false) {
+                            setCustomerId(data.customerId);
+                            toast.success('Cliente asignado');
+                        }
+                    })();
                 }}
                 onCustomersChanged={onCustomersChanged}
             />

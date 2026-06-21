@@ -4,7 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Mail, Lock, Pizza, User } from "lucide-react";
+import { Loader2, Mail, Lock, User } from "lucide-react";
 
 export default function RegisterPage() {
     // Objeto único para todos los campos del formulario (mejor que múltiples useState)
@@ -60,12 +60,16 @@ return (
                 
                 {/* Título y descripción */}
                 <div className="flex flex-col space-y-2 text-center">
-                    <div className="flex justify-center">
-                        <Pizza className="h-10 w-10 text-primary mb-2" />
+                    <div className="flex justify-center mb-2">
+                        <img
+                            src="/restogestion-logo.png"
+                            alt="RestoGestion"
+                            className="h-20 w-auto object-contain"
+                        />
                     </div>
                     <h1 className="text-3xl font-bold tracking-tight">Crea tu cuenta</h1>
                     <p className="text-sm text-muted-foreground">
-                        Únete a PizzeriaOS.
+                        Únete a RestoGestion.
                     </p>
                 </div>
                 

@@ -22,6 +22,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { formatCurrency } from '../lib/utils';
+import { formatDateAR, formatTimeAR } from '../lib/datetime';
 import { Badge } from '@/components/ui/badge';
 import {
     Calendar,
@@ -265,10 +266,11 @@ export function OrdersHistoryView({ orders, loading = false, cashShifts = [] }: 
                                     <SelectContent className="bg-[#F2EDE4] border border-[#E5D9D1] max-h-[260px]">
                                         <SelectItem value={ALL}>Todas las cajas</SelectItem>
                                         {cashShifts.map((cs) => {
-                                            const openDate = new Date(cs.startDate).toLocaleDateString(
-                                                'es-AR',
-                                                { day: '2-digit', month: '2-digit', year: 'numeric' }
-                                            );
+                                            const openDate = formatDateAR(cs.startDate, {
+                                                day: '2-digit',
+                                                month: '2-digit',
+                                                year: 'numeric',
+                                            });
                                             return (
                                                 <SelectItem key={cs.id} value={String(cs.id)}>
                                                     #{cs.id} · {openDate}
@@ -407,28 +409,18 @@ export function OrdersHistoryView({ orders, loading = false, cashShifts = [] }: 
                                     const orderCashShift = cashShifts.find(
                                         (cs) => cs.id === order.cashShiftId
                                     );
-                                    const orderDate = new Date(order.createdAt);
-                                    const orderTimeDisplay = !Number.isNaN(orderDate.getTime())
-                                        ? orderDate.toLocaleTimeString('es-AR', {
-                                              hour: '2-digit',
-                                              minute: '2-digit',
+                                    const orderTimeDisplay = formatTimeAR(order.createdAt);
+                                    const dateDisplay = orderCashShift
+                                        ? formatDateAR(orderCashShift.startDate, {
+                                              day: '2-digit',
+                                              month: 'short',
+                                              year: 'numeric',
                                           })
-                                        : '';
-                                    const cashShiftDate = orderCashShift
-                                        ? new Date(orderCashShift.startDate)
-                                        : null;
-                                    const dateDisplay =
-                                        cashShiftDate && !Number.isNaN(cashShiftDate.getTime())
-                                            ? cashShiftDate.toLocaleDateString('es-AR', {
-                                                  day: '2-digit',
-                                                  month: 'short',
-                                                  year: 'numeric',
-                                              })
-                                            : orderDate.toLocaleDateString('es-AR', {
-                                                  day: '2-digit',
-                                                  month: 'short',
-                                                  year: 'numeric',
-                                              });
+                                        : formatDateAR(order.createdAt, {
+                                              day: '2-digit',
+                                              month: 'short',
+                                              year: 'numeric',
+                                          });
                                     const totalValue =
                                         typeof order.total === 'number'
                                             ? order.total

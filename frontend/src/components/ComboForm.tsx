@@ -27,9 +27,10 @@ const emptyForm: ComboRequest = {
  */
 export function ComboForm({ open, onOpenChange, onSubmit, products, editingCombo }: ComboFormProps) {
     const [formData, setFormData] = useState<ComboRequest>(emptyForm);
+    const [priceInput, setPriceInput] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedProductId, setSelectedProductId] = useState<string>('');
-    const [selectedQuantity, setSelectedQuantity] = useState<number>(1);
+    const [selectedQuantity, setSelectedQuantity] = useState('');
 
     // Inicializar forma al abrir
     useEffect(() => {
@@ -42,11 +43,13 @@ export function ComboForm({ open, onOpenChange, onSubmit, products, editingCombo
                     quantity: item.quantity
                 }))
             });
+            setPriceInput(String(editingCombo.price));
         } else if (open) {
             setFormData(emptyForm);
+            setPriceInput('');
         }
         setSelectedProductId('');
-        setSelectedQuantity(1);
+        setSelectedQuantity('');
     }, [open, editingCombo]);
 
     // Actualizar campo del formulario
@@ -65,9 +68,12 @@ export function ComboForm({ open, onOpenChange, onSubmit, products, editingCombo
             return;
         }
 
+        const quantity = parseInt(selectedQuantity, 10);
+        if (!selectedQuantity.trim() || Number.isNaN(quantity) || quantity < 1) return;
+
         const newItem: ComboItem = {
             productId,
-            quantity: selectedQuantity
+            quantity,
         };
 
         setFormData(prev => ({
@@ -76,7 +82,7 @@ export function ComboForm({ open, onOpenChange, onSubmit, products, editingCombo
         }));
 
         setSelectedProductId('');
-        setSelectedQuantity(1);
+        setSelectedQuantity('');
     };
 
     // Remover producto del combo
@@ -104,13 +110,18 @@ export function ComboForm({ open, onOpenChange, onSubmit, products, editingCombo
         if (!formData.name.trim() || formData.items.length === 0) {
             return;
         }
+        const price = parseFloat(priceInput);
+        if (!priceInput.trim() || Number.isNaN(price) || price < 0) {
+            return;
+        }
 
         setIsSubmitting(true);
-        const success = await onSubmit(formData);
+        const success = await onSubmit({ ...formData, price });
         setIsSubmitting(false);
 
         if (success) {
             setFormData(emptyForm);
+            setPriceInput('');
             onOpenChange(false);
         }
     };
@@ -152,8 +163,8 @@ export function ComboForm({ open, onOpenChange, onSubmit, products, editingCombo
                             <Input
                                 id="price"
                                 type="number"
-                                value={formData.price}
-                                onChange={(e) => handleChange('price', parseFloat(e.target.value) || 0)}
+                                value={priceInput}
+                                onChange={(e) => setPriceInput(e.target.value)}
                                 placeholder="0.00"
                                 min="0"
                                 step="0.01"
@@ -191,11 +202,11 @@ export function ComboForm({ open, onOpenChange, onSubmit, products, editingCombo
                                 <Input
                                     type="number"
                                     value={selectedQuantity}
-                                    onChange={(e) => setSelectedQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                                    onChange={(e) => setSelectedQuantity(e.target.value)}
                                     min="1"
                                     max="99"
                                     className="h-10 focus-visible:ring-0 focus:border-[#F24452] focus-visible:outline-none"
-                                    placeholder="1"
+                                    placeholder="Cantidad"
                                 />
                             </div>
 

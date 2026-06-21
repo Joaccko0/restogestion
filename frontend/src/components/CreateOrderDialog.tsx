@@ -87,7 +87,7 @@ export function CreateOrderDialog({
             setSelectedAddressId(undefined);
             setManualAddress('');
             setShowCustomerAddressDialog(false);
-            setDeliveryFeeInput(String(deliveryFee || 0));
+            setDeliveryFeeInput(deliveryFee > 0 ? String(deliveryFee) : '');
         }
     }, [open, deliveryFee]);
 
@@ -97,7 +97,7 @@ export function CreateOrderDialog({
         setManualAddress('');
         if (deliveryMethod === DM.DELIVERY) {
             setShowCustomerAddressDialog(true);
-            setDeliveryFeeInput(String(deliveryFee || 0));
+            setDeliveryFeeInput(deliveryFee > 0 ? String(deliveryFee) : '');
         }
     }, [deliveryMethod, deliveryFee]);
 

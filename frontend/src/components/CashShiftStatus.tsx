@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '../lib/utils';
+import { formatDateAR, formatTimeAR } from '../lib/datetime';
 import type { CashShiftResponse } from '../types/cashshift.types';
 
 interface CashShiftStatusProps {
@@ -45,9 +46,13 @@ export function CashShiftStatus({ cashShift, onOpenClick, onCloseClick, loading 
         );
     }
 
-    const openTime = new Date(cashShift.startDate);
-    const timeOpen = openTime.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-    const dateOpen = openTime.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const timeOpen = formatTimeAR(cashShift.startDate);
+    const dateOpen = formatDateAR(cashShift.startDate, {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+    });
 
     return (
         <Card className="border-green-200 bg-green-50">

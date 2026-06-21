@@ -31,6 +31,7 @@ const emptyForm = (): ProductRequest => ({
  */
 export function ProductForm({ open, onOpenChange, onSubmit, editingProduct, categories }: ProductFormProps) {
     const [formData, setFormData] = useState<ProductRequest>(emptyForm());
+    const [priceInput, setPriceInput] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const defaultCategory = categories[0]?.code ?? '';
@@ -45,8 +46,10 @@ export function ProductForm({ open, onOpenChange, onSubmit, editingProduct, cate
                 category: editingProduct.category,
                 active: editingProduct.active,
             });
+            setPriceInput(String(editingProduct.price));
         } else if (open) {
             setFormData({ ...emptyForm(), category: defaultCategory });
+            setPriceInput('');
         }
     }, [open, editingProduct, defaultCategory]);
 
@@ -65,13 +68,19 @@ export function ProductForm({ open, onOpenChange, onSubmit, editingProduct, cate
             toast.error('Seleccioná una categoría');
             return;
         }
+        const price = parseFloat(priceInput);
+        if (!priceInput.trim() || Number.isNaN(price) || price < 0) {
+            toast.error('Ingresá un precio válido');
+            return;
+        }
 
         setIsSubmitting(true);
-        const success = await onSubmit(formData);
+        const success = await onSubmit({ ...formData, price });
         setIsSubmitting(false);
 
         if (success) {
             setFormData({ ...emptyForm(), category: defaultCategory });
+            setPriceInput('');
             onOpenChange(false);
         }
     };
@@ -111,8 +120,8 @@ export function ProductForm({ open, onOpenChange, onSubmit, editingProduct, cate
                             <Input
                                 id="price"
                                 type="number"
-                                value={formData.price}
-                                onChange={(e) => handleChange('price', parseFloat(e.target.value) || 0)}
+                                value={priceInput}
+                                onChange={(e) => setPriceInput(e.target.value)}
                                 placeholder="0.00"
                                 min="0"
                                 step="0.01"

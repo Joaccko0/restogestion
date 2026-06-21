@@ -41,7 +41,11 @@ export function useCashShift() {
             try {
                 const cashShift = await CashShiftService.openCashShift(businessId, startAmount);
                 setOpenCashShift(cashShift);
-                toast.success(`Caja abierta con $${startAmount.toFixed(2)}`);
+                toast.success(
+                    startAmount > 0
+                        ? `Caja abierta con $${startAmount.toFixed(2)}`
+                        : 'Caja abierta'
+                );
                 return cashShift;
             } catch (err: any) {
                 const message =

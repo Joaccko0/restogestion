@@ -32,13 +32,8 @@ export function OpenCashDialog({ open, onOpenChange, onSubmit, loading = false }
         setError('');
 
         // Validaciones
-        if (!startAmount.trim()) {
-            setError('Por favor ingresa un monto inicial');
-            return;
-        }
-
-        const amount = parseFloat(startAmount);
-        if (isNaN(amount)) {
+        const amount = startAmount.trim() === '' ? 0 : parseFloat(startAmount);
+        if (startAmount.trim() !== '' && isNaN(amount)) {
             setError('El monto debe ser un número válido');
             return;
         }
@@ -75,7 +70,7 @@ export function OpenCashDialog({ open, onOpenChange, onSubmit, loading = false }
                         Abrir Caja
                     </DialogTitle>
                     <DialogDescription>
-                        Ingresa el monto inicial con el que deseas abrir la caja
+                        Ingresá el monto inicial en caja. Podés dejarlo vacío o en 0 si no hay efectivo al abrir.
                     </DialogDescription>
                 </DialogHeader>
 

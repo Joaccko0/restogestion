@@ -5,7 +5,7 @@ import { MeService } from '../services/me.service';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Mail, Lock, Pizza } from "lucide-react";
+import { Loader2, Mail, Lock } from "lucide-react";
 export default function LoginPage() {
     // Campos del formulario
     const [email, setEmail] = useState('');
@@ -83,8 +83,12 @@ export default function LoginPage() {
                 
                 {/* Título y descripción */}
                 <div className="flex flex-col space-y-2 text-center">
-                    <div className="flex justify-center">
-                        <Pizza className="h-10 w-10 text-primary mb-4" />
+                    <div className="flex justify-center mb-4">
+                        <img
+                            src="/restogestion-logo.png"
+                            alt="RestoGestion"
+                            className="h-20 w-auto object-contain"
+                        />
                     </div>
                     <h1 className="text-3xl font-bold tracking-tight">Bienvenido de nuevo</h1>
                     <p className="text-sm text-muted-foreground">

@@ -18,6 +18,7 @@ import type { OrderResponse, DeliveryMethod } from '../types/order.types';
 import { PaymentMethodLabels, DeliveryMethodLabels } from '../types/order.types';
 import { formatCurrency } from '../lib/utils';
 import { cn } from '../lib/utils';
+import { formatDateAR, parseApiDateTime } from '../lib/datetime';
 
 interface OrderCardProps {
     order: OrderResponse;
@@ -33,7 +34,7 @@ const DELIVERY_CONFIG: Record<DeliveryMethod, { icon: typeof Truck }> = {
 };
 
 function formatTimeAgo(dateString: string): string {
-    const date = new Date(dateString);
+    const date = parseApiDateTime(dateString);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
@@ -42,11 +43,11 @@ function formatTimeAgo(dateString: string): string {
     if (diffMins < 1) return 'Ahora';
     if (diffMins < 60) return `Hace ${diffMins} min`;
     if (diffHours < 24) return `Hace ${diffHours} h`;
-    return date.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' });
+    return formatDateAR(dateString, { day: '2-digit', month: 'short' });
 }
 
 function isUrgent(createdAt: string, diffMinsThreshold = 25): boolean {
-    const diffMins = Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000);
+    const diffMins = Math.floor((Date.now() - parseApiDateTime(createdAt).getTime()) / 60000);
     return diffMins >= diffMinsThreshold;
 }
 

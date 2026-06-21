@@ -64,10 +64,16 @@ export default function DashboardLayout() {
             <aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 shadow-sm">
                 
                 {/* Logo del Negocio */}
-                <div className="p-6 border-b border-gray-100">
-                    <div className="flex items-center gap-2 font-bold text-xl text-orange-600">
-                        <Pizza className="h-6 w-6" />
-                        <span>{currentBusiness?.name || 'Cargando...'}</span>
+                <div className="px-4 py-6 border-b border-gray-100">
+                    <div className="flex flex-col items-center gap-4 text-center">
+                        <img
+                            src="/restogestion-logo.png"
+                            alt="RestoGestion"
+                            className="h-32 w-full max-w-[220px] object-contain"
+                        />
+                        <span className="font-semibold text-base text-gray-800 w-full leading-snug">
+                            {currentBusiness?.name || 'Cargando...'}
+                        </span>
                     </div>
                 </div>
 
@@ -112,7 +118,11 @@ export default function DashboardLayout() {
                 
                 {/* Header Móvil (Solo visible en celular) */}
                 <header className="md:hidden flex items-center justify-between p-4 bg-white border-b shadow-sm">
-                    <span className="font-bold text-orange-600">PizzeriaOS</span>
+                    <img
+                        src="/restogestion-logo.png"
+                        alt="RestoGestion"
+                        className="h-8 w-auto object-contain"
+                    />
                     <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
                         {isMobileMenuOpen ? <X /> : <Menu />}
                     </Button>

@@ -29,11 +29,13 @@ export function DeliveryFeeDialog({
     currentFee,
     onSaved,
 }: DeliveryFeeDialogProps) {
-    const [fee, setFee] = useState(String(currentFee || 0));
+    const [fee, setFee] = useState('');
     const [saving, setSaving] = useState(false);
 
     const handleOpen = (isOpen: boolean) => {
-        if (isOpen) setFee(String(currentFee || 0));
+        if (isOpen) {
+            setFee(currentFee > 0 ? String(currentFee) : '');
+        }
         onOpenChange(isOpen);
     };
 
