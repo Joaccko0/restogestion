@@ -9,6 +9,7 @@ import { OrderService } from '../services/order.service';
 import { CashShiftService } from '../services/cashshift.service';
 import type { OrderResponse } from '../types/order.types';
 import type { CashShiftResponse } from '../types/cashshift.types';
+import { normalizeCashShiftResponse } from '../lib/cashShiftStats';
 
 interface UseOrdersHistoricReturn {
     orders: OrderResponse[];
@@ -43,7 +44,7 @@ export function useOrdersHistoric(businessId: number | undefined): UseOrdersHist
                 CashShiftService.getAllCashShifts(businessId)
             ]);
             setOrders(ordersData);
-            setCashShifts(cashShiftsData);
+            setCashShifts(cashShiftsData.map(normalizeCashShiftResponse));
         } catch (err: any) {
             const message = err.response?.data?.message || 'Error al cargar historial de órdenes';
             setError(message);
@@ -58,9 +59,19 @@ export function useOrdersHistoric(businessId: number | undefined): UseOrdersHist
         if (businessId) {
             loadOrdersHistoric();
         } else {
-            // Limpiar órdenes si no hay negocio seleccionado
             setOrders([]);
+            setCashShifts([]);
         }
+    }, [businessId, loadOrdersHistoric]);
+
+    useEffect(() => {
+        const onVisible = () => {
+            if (document.visibilityState === 'visible' && businessId) {
+                void loadOrdersHistoric();
+            }
+        };
+        document.addEventListener('visibilitychange', onVisible);
+        return () => document.removeEventListener('visibilitychange', onVisible);
     }, [businessId, loadOrdersHistoric]);
 
     return {

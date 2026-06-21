@@ -1,5 +1,5 @@
 /**
- * Dialog para cerrar caja con resumen del sistema y carga manual opcional
+ * Dialog para cerrar caja con resumen del sistema y carga manual opcional (dialog separado)
  */
 
 import { useState } from 'react';
@@ -24,12 +24,14 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { DollarSign, AlertTriangle, ChevronDown, ChevronUp, ClipboardList, Banknote } from 'lucide-react';
+import { DollarSign, AlertTriangle, ClipboardList, Banknote, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 import { getOrderPaymentBreakdown } from '../lib/orderPayments';
-import type { CashShiftResponse, CloseCashShiftRequest } from '../types/cashshift.types';
+import type { CashShiftResponse, CloseCashShiftRequest, ManualCashSummary } from '../types/cashshift.types';
+import { hasManualSummary, manualSummaryToCloseRequest } from '../types/cashshift.types';
 import type { OrderResponse } from '../types/order.types';
 import type { MenuCategory } from '../services/menuCategory.service';
+import { CloseCashManualSummaryDialog } from './CloseCashManualSummaryDialog';
 
 interface CloseCashDialogProps {
     open: boolean;
@@ -55,9 +57,8 @@ export function CloseCashDialog({
     const [endAmount, setEndAmount] = useState('');
     const [error, setError] = useState('');
     const [showConfirm, setShowConfirm] = useState(false);
-    const [showManual, setShowManual] = useState(false);
-    const [manualTotal, setManualTotal] = useState('');
-    const [categoryAmounts, setCategoryAmounts] = useState<Record<string, string>>({});
+    const [manualSummary, setManualSummary] = useState<ManualCashSummary | null>(null);
+    const [showManualDialog, setShowManualDialog] = useState(false);
 
     const shiftOrders = orders.filter((o) => o.cashShiftId === cashShift?.id);
     const paidOrders = shiftOrders.filter(
@@ -88,37 +89,14 @@ export function CloseCashDialog({
         setEndAmount('');
         setError('');
         setShowConfirm(false);
-        setShowManual(false);
-        setManualTotal('');
-        setCategoryAmounts({});
+        setManualSummary(null);
+        setShowManualDialog(false);
     };
 
-    const buildRequest = (physicalAmount: number): CloseCashShiftRequest => {
-        const request: CloseCashShiftRequest = { endAmount: physicalAmount };
-
-        if (showManual && manualTotal.trim()) {
-            const parsed = parseFloat(manualTotal);
-            if (!isNaN(parsed) && parsed >= 0) {
-                request.manualTotalCollected = parsed;
-            }
-        }
-
-        const categorySales = menuCategories
-            .map((cat) => {
-                const val = categoryAmounts[cat.code];
-                if (!val?.trim()) return null;
-                const amount = parseFloat(val);
-                if (isNaN(amount) || amount <= 0) return null;
-                return { category: cat.code, amount };
-            })
-            .filter(Boolean) as CloseCashShiftRequest['categorySales'];
-
-        if (categorySales && categorySales.length > 0) {
-            request.categorySales = categorySales;
-        }
-
-        return request;
-    };
+    const buildRequest = (physicalAmount: number): CloseCashShiftRequest => ({
+        endAmount: physicalAmount,
+        ...manualSummaryToCloseRequest(manualSummary),
+    });
 
     const performClose = async (physicalAmount: number) => {
         try {
@@ -150,10 +128,7 @@ export function CloseCashDialog({
     };
 
     const difference = expectedInDrawer - parseFloat(endAmount || '0');
-    const categoryManualSum = Object.values(categoryAmounts).reduce((sum, v) => {
-        const n = parseFloat(v);
-        return sum + (isNaN(n) ? 0 : n);
-    }, 0);
+    const manualLoaded = hasManualSummary(manualSummary);
 
     return (
         <>
@@ -173,7 +148,7 @@ export function CloseCashDialog({
                             Cerrar caja
                         </DialogTitle>
                         <DialogDescription>
-                            Verificá el efectivo en caja. Podés cargar un resumen manual del día.
+                            Verificá el efectivo en caja. El resumen manual se carga en un paso aparte.
                         </DialogDescription>
                     </DialogHeader>
 
@@ -278,97 +253,50 @@ export function CloseCashDialog({
                             )}
                         </div>
 
-                        <div className="rounded-xl border border-dashed border-[#E5D9D1]">
-                            <button
-                                type="button"
-                                className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-[#F2EDE4]/40 transition-colors rounded-xl"
-                                onClick={() => setShowManual(!showManual)}
-                            >
-                                <div className="flex items-center gap-2">
-                                    <ClipboardList className="h-4 w-4 text-[#F24452]" />
+                        <div className="rounded-xl border border-dashed border-[#E5D9D1] p-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <div className="flex items-start gap-2">
+                                    <ClipboardList className="h-4 w-4 text-[#F24452] mt-0.5 shrink-0" />
                                     <div>
                                         <p className="text-sm font-semibold text-[#262626]">
                                             Resumen manual del día
                                         </p>
                                         <p className="text-xs text-gray-500">
-                                            Opcional — si anotaste ventas en papel
+                                            Opcional — medios de pago, categorías y unidades
                                         </p>
-                                    </div>
-                                </div>
-                                {showManual ? (
-                                    <ChevronUp className="h-4 w-4 text-gray-400" />
-                                ) : (
-                                    <ChevronDown className="h-4 w-4 text-gray-400" />
-                                )}
-                            </button>
-
-                            {showManual && (
-                                <div className="px-4 pb-4 space-y-4 border-t border-[#E5D9D1] pt-4">
-                                    <div className="space-y-1.5">
-                                        <Label htmlFor="manualTotal" className="text-sm">
-                                            Total recaudado del turno
-                                        </Label>
-                                        <Input
-                                            id="manualTotal"
-                                            type="number"
-                                            placeholder={
-                                                systemTotalCollected > 0
-                                                    ? systemTotalCollected.toFixed(2)
-                                                    : '0,00'
-                                            }
-                                            value={manualTotal}
-                                            onChange={(e) => setManualTotal(e.target.value)}
-                                            className="bg-[#F2EDE4] border-[#E5D9D1]"
-                                            min="0"
-                                            step="0.01"
-                                        />
-                                        <p className="text-xs text-gray-500">
-                                            Si lo completás, las estadísticas usarán este monto para
-                                            este turno en lugar de sumar pedidos del sistema.
-                                        </p>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label className="text-sm">Ventas por categoría</Label>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                            {menuCategories.map((cat) => (
-                                                <div key={cat.code} className="space-y-1">
-                                                    <Label className="text-xs text-gray-500">
-                                                        {cat.name}
-                                                    </Label>
-                                                    <Input
-                                                        type="number"
-                                                        placeholder="0"
-                                                        value={categoryAmounts[cat.code] || ''}
-                                                        onChange={(e) =>
-                                                            setCategoryAmounts((prev) => ({
-                                                                ...prev,
-                                                                [cat.code]: e.target.value,
-                                                            }))
-                                                        }
-                                                        className="h-9 bg-[#F2EDE4] border-[#E5D9D1] text-sm"
-                                                        min="0"
-                                                        step="0.01"
-                                                    />
-                                                </div>
-                                            ))}
-                                        </div>
-                                        {categoryManualSum > 0 && manualTotal && (
-                                            <p className="text-xs text-gray-500">
-                                                Suma categorías:{' '}
-                                                {formatCurrency(categoryManualSum)}
-                                                {Math.abs(
-                                                    categoryManualSum - parseFloat(manualTotal)
-                                                ) > 0.01 && (
-                                                    <span className="text-amber-600 ml-1">
-                                                        (no coincide con el total)
+                                        {manualLoaded && (
+                                            <p className="text-xs text-emerald-700 flex items-center gap-1 mt-1">
+                                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                                Resumen cargado
+                                                {manualSummary?.manualTotalCollected != null &&
+                                                    ` · Total ${formatCurrency(manualSummary.manualTotalCollected)}`}
+                                                {manualSummary?.categorySales?.some(
+                                                    (c) => (c.quantity ?? 0) > 0
+                                                ) && (
+                                                    <span>
+                                                        {' '}
+                                                        ·{' '}
+                                                        {manualSummary!.categorySales!.reduce(
+                                                            (s, c) => s + (c.quantity ?? 0),
+                                                            0
+                                                        )}{' '}
+                                                        u.
                                                     </span>
                                                 )}
                                             </p>
                                         )}
                                     </div>
                                 </div>
-                            )}
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-[#E5D9D1] shrink-0"
+                                    onClick={() => setShowManualDialog(true)}
+                                >
+                                    {manualLoaded ? 'Editar resumen' : 'Cargar resumen'}
+                                </Button>
+                            </div>
                         </div>
                     </div>
 
@@ -386,6 +314,20 @@ export function CloseCashDialog({
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <CloseCashManualSummaryDialog
+                open={showManualDialog}
+                onOpenChange={setShowManualDialog}
+                menuCategories={menuCategories}
+                systemTotalCollected={systemTotalCollected}
+                systemPaymentBreakdown={{
+                    CASH: paymentBreakdown.CASH,
+                    CARD: paymentBreakdown.CARD,
+                    TRANSFER: paymentBreakdown.TRANSFER,
+                }}
+                value={manualSummary}
+                onSave={setManualSummary}
+            />
 
             <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
                 <AlertDialogContent className="bg-white">

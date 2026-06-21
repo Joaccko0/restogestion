@@ -8,12 +8,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.pizzeria.backend.dto.cashshift.CategorySaleDto;
 import com.pizzeria.backend.dto.cashshift.CloseCashShiftRequest;
+import com.pizzeria.backend.dto.cashshift.PaymentMethodSaleDto;
 import com.pizzeria.backend.model.CashShift;
 import com.pizzeria.backend.model.CashShift.CashShiftStatus;
 import com.pizzeria.backend.model.Order;
 import com.pizzeria.backend.model.enums.OrderStatus;
+import com.pizzeria.backend.model.enums.PaymentMethod;
 import com.pizzeria.backend.repository.CashShiftRepository;
 import com.pizzeria.backend.repository.OrderRepository;
 
@@ -59,9 +60,20 @@ public class CashShiftService {
 
         if (request.categorySales() != null && !request.categorySales().isEmpty()) {
             try {
-                cashShift.setManualCategorySales(objectMapper.writeValueAsString(request.categorySales()));
+                String categoryJson = objectMapper.writeValueAsString(request.categorySales());
+                objectMapper.readTree(categoryJson);
+                cashShift.setManualCategorySales(categoryJson);
             } catch (Exception e) {
                 throw new IllegalArgumentException("No se pudo guardar el desglose por categoría");
+            }
+        }
+
+        if (request.paymentBreakdown() != null && !request.paymentBreakdown().isEmpty()) {
+            validatePaymentBreakdown(request.paymentBreakdown());
+            try {
+                cashShift.setManualPaymentBreakdown(objectMapper.writeValueAsString(request.paymentBreakdown()));
+            } catch (Exception e) {
+                throw new IllegalArgumentException("No se pudo guardar el desglose por medio de pago");
             }
         }
 
@@ -87,5 +99,15 @@ public class CashShiftService {
     @Transactional(readOnly = true)
     public List<CashShift> getAllCashShifts(Long businessId) {
         return cashShiftRepository.findByBusinessId(businessId);
+    }
+
+    private void validatePaymentBreakdown(List<PaymentMethodSaleDto> breakdown) {
+        for (PaymentMethodSaleDto entry : breakdown) {
+            try {
+                PaymentMethod.valueOf(entry.method());
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Medio de pago inválido: " + entry.method());
+            }
+        }
     }
 }

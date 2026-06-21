@@ -66,7 +66,7 @@ export function useCashShift() {
             try {
                 await CashShiftService.closeCashShift(businessId, request);
                 setOpenCashShift(null);
-                toast.success(`Caja cerrada — efectivo en caja: $${request.endAmount.toFixed(2)}`);
+                    toast.success(`Caja cerrada — efectivo en caja: $${request.endAmount.toFixed(2)}`);
                 return true;
             } catch (err: any) {
                 const message =

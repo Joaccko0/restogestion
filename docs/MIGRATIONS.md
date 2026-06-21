@@ -12,6 +12,7 @@ En **desarrollo** (`ddl-auto: update`) Hibernate suele aplicar cambios al arranc
 | `002_products_category_required.sql` | `products.category` NOT NULL |
 | `003_default_menu_categories.sql` | Categorías por defecto (Pizzas, Empanadas, Bebidas, Otros) |
 | `004_order_payments_and_items_edit.sql` | Tabla `order_payments` + backfill de pedidos pagados |
+| `005_manual_payment_breakdown.sql` | Columna `manual_payment_breakdown` en `cash_shifts` |
 
 Todas son **idempotentes** (`IF NOT EXISTS`, `NOT EXISTS` en inserts): se pueden re-ejecutar sin romper datos.
 

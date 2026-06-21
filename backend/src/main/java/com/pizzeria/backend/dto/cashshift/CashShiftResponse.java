@@ -15,5 +15,6 @@ public record CashShiftResponse(
     BigDecimal startAmount,
     BigDecimal endAmount,
     BigDecimal manualTotalCollected,
-    List<CategorySaleDto> categorySales
+    List<CategorySaleDto> categorySales,
+    List<PaymentMethodSaleDto> paymentBreakdown
 ) {}

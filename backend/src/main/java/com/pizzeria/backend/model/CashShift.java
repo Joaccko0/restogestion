@@ -87,9 +87,13 @@ public class CashShift {
     @Column(name = "manual_total_collected", precision = 10, scale = 2)
     private BigDecimal manualTotalCollected;
 
-    /** JSON: [{ "category": "PIZZAS", "amount": 1000.00 }, ...] */
+    /** JSON: [{ "category": "PIZZAS", "amount": 1000.00, "quantity": 12 }, ...] */
     @Column(name = "manual_category_sales", columnDefinition = "TEXT")
     private String manualCategorySales;
+
+    /** JSON: [{ "method": "CASH", "amount": 500.00 }, ...] */
+    @Column(name = "manual_payment_breakdown", columnDefinition = "TEXT")
+    private String manualPaymentBreakdown;
 
     /**
      * Auditoría: fecha de creación

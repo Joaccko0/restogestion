@@ -21,5 +21,9 @@ public record CloseCashShiftRequest(
 
     /** Ventas por categoría (opcional). */
     @Valid
-    List<CategorySaleDto> categorySales
+    List<CategorySaleDto> categorySales,
+
+    /** Monto recaudado por medio de pago (opcional). */
+    @Valid
+    List<PaymentMethodSaleDto> paymentBreakdown
 ) {}

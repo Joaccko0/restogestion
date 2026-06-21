@@ -13,6 +13,7 @@ import {
     Clock,
     Loader2,
     ClipboardList,
+    Layers,
     type LucideIcon,
 } from 'lucide-react';
 import { useBusiness } from '../context/BusinessContext';
@@ -28,6 +29,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatCurrency } from '../lib/utils';
 import { getOrderPaymentBreakdown } from '../lib/orderPayments';
+import {
+    addManualCategorySales,
+    addManualPaymentBreakdown,
+    aggregateCategoryQuantities,
+    manualShiftRevenue,
+    normalizeCategoryLabel,
+    shiftHasManualData,
+    shiftReplacesSystemRevenue,
+    toNum,
+} from '../lib/cashShiftStats';
 
 const PIE_COLORS = ['#F24452', '#262626', '#8B7355', '#C4A882', '#E5D9D1', '#F2A444', '#6B7280'];
 
@@ -197,19 +208,27 @@ export default function StatsPage() {
     const dateStart = toDateStart(filterDateFrom);
     const dateEnd = toDateEnd(filterDateTo);
 
+    const filteredShifts = useMemo(() => {
+        return cashShifts.filter((s) => shiftInRange(s, dateStart, dateEnd));
+    }, [cashShifts, filterDateFrom, filterDateTo]);
+
+    const shiftIdsInRange = useMemo(
+        () => new Set(filteredShifts.map((s) => s.id)),
+        [filteredShifts]
+    );
+
     const filteredOrders = useMemo(() => {
         return orders.filter((order) => {
+            if (order.cashShiftId != null && shiftIdsInRange.has(order.cashShiftId)) {
+                return true;
+            }
             const d = new Date(order.createdAt);
             if (Number.isNaN(d.getTime())) return false;
             if (dateStart && d < dateStart) return false;
             if (dateEnd && d > dateEnd) return false;
             return true;
         });
-    }, [orders, filterDateFrom, filterDateTo]);
-
-    const filteredShifts = useMemo(() => {
-        return cashShifts.filter((s) => shiftInRange(s, dateStart, dateEnd));
-    }, [cashShifts, filterDateFrom, filterDateTo]);
+    }, [orders, shiftIdsInRange, filterDateFrom, filterDateTo]);
 
     const filteredExpenses = useMemo(() => {
         return expenses.filter((expense) => {
@@ -223,11 +242,9 @@ export default function StatsPage() {
 
     const stats = useMemo(() => {
         const manualShiftIds = new Set(
-            filteredShifts
-                .filter((s) => s.manualTotalCollected != null)
-                .map((s) => s.id)
+            filteredShifts.filter(shiftReplacesSystemRevenue).map((s) => s.id)
         );
-        const manualShiftCount = manualShiftIds.size;
+        const manualShiftCount = filteredShifts.filter(shiftHasManualData).length;
 
         const nonCancelled = filteredOrders.filter((o) => o.orderStatus !== 'CANCELLED');
         const paidOrders = nonCancelled.filter((o) => o.paymentStatus === 'PAID');
@@ -236,16 +253,21 @@ export default function StatsPage() {
         );
 
         const orderRevenue = systemPaidOrders.reduce(
-            (sum, o) => sum + (Number(o.total) || 0),
+            (sum, o) => sum + toNum(o.total),
             0
         );
-        const manualRevenue = filteredShifts
-            .filter((s) => s.manualTotalCollected != null)
-            .reduce((sum, s) => sum + (s.manualTotalCollected ?? 0), 0);
+
+        let manualRevenue = 0;
+        filteredShifts
+            .filter((s) => shiftReplacesSystemRevenue(s))
+            .forEach((shift) => {
+                manualRevenue += manualShiftRevenue(shift);
+            });
+
         const totalRevenue = orderRevenue + manualRevenue;
 
         const deliveryFeesTotal = systemPaidOrders.reduce(
-            (sum, o) => sum + (Number(o.deliveryFee) || 0),
+            (sum, o) => sum + toNum(o.deliveryFee),
             0
         );
 
@@ -267,42 +289,60 @@ export default function StatsPage() {
                 }
             });
         });
+        filteredShifts.forEach((shift) => {
+            if (!manualShiftIds.has(shift.id)) return;
+            addManualPaymentBreakdown(shift, paymentTotals);
+        });
+
+        const categoryTotals = new Map<string, number>();
+        systemPaidOrders.forEach((order) => {
+            order.items.forEach((item) => {
+                const label = normalizeCategoryLabel(item.category, labelByCode);
+                categoryTotals.set(label, (categoryTotals.get(label) || 0) + toNum(item.subtotal));
+            });
+            const fee = toNum(order.deliveryFee);
+            if (fee > 0) {
+                categoryTotals.set('Envíos', (categoryTotals.get('Envíos') || 0) + fee);
+            }
+        });
+        filteredShifts.forEach((shift) => {
+            if (!shiftHasManualData(shift)) return;
+            addManualCategorySales(shift, labelByCode, categoryTotals, new Map(), {
+                includeAmounts: true,
+                includeQuantities: false,
+            });
+        });
+
+        const hasManualCategoryAmounts = filteredShifts.some((shift) =>
+            (shift.categorySales ?? []).some((cs) => toNum(cs.amount) > 0)
+        );
+
+        const categoryQuantityTotals = aggregateCategoryQuantities(
+            filteredShifts,
+            systemPaidOrders,
+            labelByCode
+        );
+
+        const categoryPieData = Array.from(categoryTotals.entries())
+            .map(([label, value]) => ({ label, value }))
+            .sort((a, b) => b.value - a.value);
+
+        const categoryQuantityPieData = Array.from(categoryQuantityTotals.entries())
+            .map(([label, value]) => ({ label, value }))
+            .sort((a, b) => b.value - a.value);
+
+        const categoryQuantityTotal = categoryQuantityPieData.reduce((sum, row) => sum + row.value, 0);
 
         const itemsMap = new Map<string, { label: string; quantity: number; revenue: number }>();
         systemPaidOrders.forEach((order) => {
             order.items.forEach((item) => {
                 const label = item.name || 'Sin nombre';
                 const current = itemsMap.get(label) || { label, quantity: 0, revenue: 0 };
-                current.quantity += item.quantity || 0;
-                current.revenue += Number(item.subtotal) || 0;
+                current.quantity += Math.floor(toNum(item.quantity));
+                current.revenue += toNum(item.subtotal);
                 itemsMap.set(label, current);
             });
         });
-
-        const categoryTotals = new Map<string, number>();
-        systemPaidOrders.forEach((order) => {
-            order.items.forEach((item) => {
-                const cat = item.category || 'OTROS';
-                const label = labelByCode[cat] || cat;
-                categoryTotals.set(label, (categoryTotals.get(label) || 0) + Number(item.subtotal));
-            });
-            if (order.deliveryFee && order.deliveryFee > 0) {
-                categoryTotals.set(
-                    'Envíos',
-                    (categoryTotals.get('Envíos') || 0) + order.deliveryFee
-                );
-            }
-        });
-        filteredShifts.forEach((shift) => {
-            shift.categorySales?.forEach((cs) => {
-                const label = labelByCode[cs.category] || cs.category;
-                categoryTotals.set(label, (categoryTotals.get(label) || 0) + cs.amount);
-            });
-        });
-
-        const categoryPieData = Array.from(categoryTotals.entries())
-            .map(([label, value]) => ({ label, value }))
-            .sort((a, b) => b.value - a.value);
 
         const items = Array.from(itemsMap.values()).sort((a, b) => b.quantity - a.quantity);
         const productPieData = (() => {
@@ -336,6 +376,9 @@ export default function StatsPage() {
             items,
             productPieData,
             categoryPieData,
+            categoryQuantityPieData,
+            categoryQuantityTotal,
+            hasManualCategoryAmounts,
             hourCounts,
         };
     }, [filteredOrders, filteredShifts, labelByCode]);
@@ -445,8 +488,8 @@ export default function StatsPage() {
                                 </p>
                                 <p className="text-gray-600 mt-0.5">
                                     {formatCurrency(stats.manualRevenue)} provienen de cierres de
-                                    caja cargados a mano. Las ventas por categoría incluyen esos
-                                    datos.
+                                    caja cargados a mano. Los montos y unidades por categoría
+                                    incluyen esos datos.
                                 </p>
                             </div>
                         </div>
@@ -485,7 +528,7 @@ export default function StatsPage() {
                         <Card className="bg-white border-[#E5D9D1]">
                             <CardHeader className="pb-2">
                                 <CardTitle className="text-base font-semibold">
-                                    Ventas por categoría
+                                    Ventas por categoría ($)
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
@@ -493,6 +536,44 @@ export default function StatsPage() {
                                     data={stats.categoryPieData}
                                     valueFormatter={(v) => formatCurrency(v)}
                                 />
+                                {stats.manualShiftCount > 0 &&
+                                    stats.manualRevenue > 0 &&
+                                    !stats.hasManualCategoryAmounts && (
+                                        <p className="text-xs text-amber-700 mt-4 pt-3 border-t border-[#E5D9D1]">
+                                            Hay ingresos manuales ({formatCurrency(stats.manualRevenue)})
+                                            pero sin montos por categoría. Cargá la sección
+                                            &quot;Montos por categoría ($)&quot; al cerrar caja
+                                            (el total recaudado no alimenta este gráfico).
+                                        </p>
+                                    )}
+                            </CardContent>
+                        </Card>
+
+                        <Card className="bg-white border-[#E5D9D1]">
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                                    <Layers className="h-4 w-4 text-[#F24452]" />
+                                    Ventas por categoría (cantidad)
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <PieChart
+                                    data={stats.categoryQuantityPieData}
+                                    valueFormatter={(v) => `${v} u.`}
+                                />
+                                {stats.categoryQuantityTotal > 0 && (
+                                    <p className="text-xs text-gray-500 mt-4 pt-3 border-t border-[#E5D9D1]">
+                                        Total: {stats.categoryQuantityTotal} unidades
+                                        {stats.manualShiftCount > 0 && ' (sistema + resumen manual)'}
+                                    </p>
+                                )}
+                                {stats.categoryQuantityTotal === 0 && stats.manualShiftCount > 0 && (
+                                    <p className="text-xs text-amber-700 mt-4 pt-3 border-t border-[#E5D9D1]">
+                                        Hay turnos con resumen manual pero sin unidades cargadas.
+                                        Usá la columna &quot;Unidades vendidas&quot; al cerrar caja
+                                        (no &quot;Monto $&quot;).
+                                    </p>
+                                )}
                             </CardContent>
                         </Card>
 
@@ -504,9 +585,10 @@ export default function StatsPage() {
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 {Object.entries(stats.paymentTotals).map(([method, data]) => {
-                                    const pct = stats.orderRevenue
-                                        ? data.amount / stats.orderRevenue
+                                    const pct = stats.totalRevenue
+                                        ? data.amount / stats.totalRevenue
                                         : 0;
+                                    const hasManual = stats.manualShiftCount > 0;
                                     return (
                                         <div
                                             key={method}
@@ -517,7 +599,9 @@ export default function StatsPage() {
                                                     {PaymentMethodLabels[method as PaymentMethod]}
                                                 </p>
                                                 <p className="text-xs text-gray-500">
-                                                    {data.count} pedidos (sistema)
+                                                    {data.count} registro
+                                                    {data.count !== 1 ? 's' : ''}
+                                                    {hasManual ? ' (sistema + manual)' : ' (sistema)'}
                                                 </p>
                                             </div>
                                             <div className="text-right tabular-nums">
@@ -624,7 +708,7 @@ export default function StatsPage() {
                         </p>
                         <p>
                             • Resumen manual: se carga al cerrar caja. Reemplaza ingresos de ese
-                            turno y alimenta el gráfico por categoría.
+                            turno y alimenta montos y unidades por categoría.
                         </p>
                         <p>
                             • El costo de delivery se incluye en el total del pedido
