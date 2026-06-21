@@ -12,11 +12,11 @@ import {
     DialogFooter
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-// import { Input } from '@/components/ui/input';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Minus, Trash2, User } from 'lucide-react';
+import { Plus, Minus, Trash2, User, MapPin, AlertCircle } from 'lucide-react';
 import type { Product, Combo } from '../types/inventory.types';
 import type { CreateOrderRequest, OrderItemRequest, PaymentMethod, DeliveryMethod } from '../types/order.types';
 import type { Customer } from '../types/customer.types';
@@ -35,6 +35,7 @@ interface CreateOrderDialogProps {
     customers: Customer[];
     businessId: number;
     onCustomersChanged: () => void;
+    deliveryFee?: number;
 }
 
 interface CartItem {
@@ -56,7 +57,8 @@ export function CreateOrderDialog({
     combos,
     customers,
     businessId,
-    onCustomersChanged
+    onCustomersChanged,
+    deliveryFee = 0,
 }: CreateOrderDialogProps) {
     const [cart, setCart] = useState<CartItem[]>([]);
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PM.CASH);
@@ -66,8 +68,9 @@ export function CreateOrderDialog({
     const [manualAddress, setManualAddress] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showCustomerAddressDialog, setShowCustomerAddressDialog] = useState(false);
+    const [deliveryFeeInput, setDeliveryFeeInput] = useState('');
 
-    // const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
+    const selectedCustomer = customers.find((c) => c.id === selectedCustomerId);
     const selectedAddress = useMemo(() => {
         if (!selectedCustomerId) return null;
         const customer = customers.find(c => c.id === selectedCustomerId);
@@ -84,14 +87,19 @@ export function CreateOrderDialog({
             setSelectedAddressId(undefined);
             setManualAddress('');
             setShowCustomerAddressDialog(false);
+            setDeliveryFeeInput(String(deliveryFee || 0));
         }
-    }, [open]);
+    }, [open, deliveryFee]);
 
-    // Resetear dirección si cambia el cliente o el método de entrega
+    // Resetear dirección al cambiar método; abrir selector si es delivery
     useEffect(() => {
         setSelectedAddressId(undefined);
         setManualAddress('');
-    }, [deliveryMethod]);
+        if (deliveryMethod === DM.DELIVERY) {
+            setShowCustomerAddressDialog(true);
+            setDeliveryFeeInput(String(deliveryFee || 0));
+        }
+    }, [deliveryMethod, deliveryFee]);
 
     const addToCart = (type: 'product' | 'combo', id: number, name: string, price: number) => {
         const existing = cart.find(item => item.type === type && item.id === id);
@@ -121,7 +129,10 @@ export function CreateOrderDialog({
         setCart(cart.filter(item => !(item.type === type && item.id === id)));
     };
 
-    const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const parsedDeliveryFee =
+        deliveryMethod === DM.DELIVERY ? parseFloat(deliveryFeeInput) || 0 : 0;
+    const cartSubtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const total = cartSubtotal + parsedDeliveryFee;
 
     const handleSubmit = async () => {
         if (cart.length === 0) {
@@ -155,7 +166,8 @@ export function CreateOrderDialog({
             items,
             customerId: selectedCustomerId,
             addressId: deliveryMethod === DM.DELIVERY ? selectedAddressId : undefined,
-            manualAddress: deliveryMethod === DM.DELIVERY && manualAddress ? manualAddress : undefined
+            manualAddress: deliveryMethod === DM.DELIVERY && manualAddress ? manualAddress : undefined,
+            deliveryFee: deliveryMethod === DM.DELIVERY ? parsedDeliveryFee : undefined,
         };
 
         console.log('Enviando request:', JSON.stringify(request, null, 2));
@@ -325,67 +337,136 @@ export function CreateOrderDialog({
                                 </div>
                             </div>
 
-                            {/* Cliente y Dirección (al final) */}
-                            <div className="border-2 border-[#E5D9D1] rounded-lg p-3 space-y-2 bg-[#F2EDE4]/30">
-                                <div className="flex items-center justify-between">
-                                    <Label className="text-sm font-semibold">
-                                        Cliente {deliveryMethod === DM.DELIVERY && '& Dirección'}
+                            {/* Cliente / destino de entrega */}
+                            <div
+                                className={`border-2 rounded-lg p-3 space-y-2 ${
+                                    deliveryMethod === DM.DELIVERY &&
+                                    !selectedAddressId &&
+                                    !manualAddress
+                                        ? 'border-[#F24452]/30 bg-[#F2EDE4]/50'
+                                        : 'border-[#E5D9D1] bg-[#F2EDE4]/30'
+                                }`}
+                            >
+                                <div className="flex items-center justify-between gap-2">
+                                    <Label className="text-sm font-semibold flex items-center gap-1.5">
+                                        {deliveryMethod === DM.DELIVERY ? (
+                                            <>
+                                                <MapPin className="h-4 w-4 text-[#F24452]" />
+                                                Destino de entrega
+                                            </>
+                                        ) : (
+                                            <>
+                                                <User className="h-4 w-4 text-gray-600" />
+                                                Cliente
+                                            </>
+                                        )}
                                     </Label>
                                     <Button
                                         type="button"
                                         size="sm"
                                         onClick={() => setShowCustomerAddressDialog(true)}
-                                        className="bg-[#F24452] hover:bg-[#d93a48] cursor-pointer h-8"
+                                        className="bg-[#F24452] hover:bg-[#d93a48] cursor-pointer h-8 shrink-0"
                                     >
-                                        <User className="w-4 h-4 mr-1" />
-                                        {selectedCustomerId || manualAddress ? 'Cambiar' : 'Seleccionar'}
+                                        {deliveryMethod === DM.DELIVERY ? (
+                                            <>
+                                                <MapPin className="w-4 h-4 mr-1" />
+                                                {selectedAddressId || manualAddress
+                                                    ? 'Cambiar'
+                                                    : 'Elegir destino'}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <User className="w-4 h-4 mr-1" />
+                                                {selectedCustomerId ? 'Cambiar' : 'Elegir'}
+                                            </>
+                                        )}
                                     </Button>
                                 </div>
 
-                                {/* Información seleccionada */}
-                                {selectedCustomerId ? (
-                                    <div className="bg-white p-2 rounded border">
-                                        <div className="flex items-center justify-between">
-                                            <div className="text-sm font-medium">
-                                                {customers.find(c => c.id === selectedCustomerId)?.name}
+                                {deliveryMethod === DM.DELIVERY ? (
+                                    selectedAddressId && selectedCustomer ? (
+                                        <div className="bg-white rounded-lg border border-[#F24452]/20 p-3 space-y-2">
+                                            <div className="flex items-start gap-2">
+                                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#F24452] text-white text-xs font-bold">
+                                                    {selectedCustomer.name.charAt(0).toUpperCase()}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-semibold text-sm text-gray-900">
+                                                        {selectedCustomer.name}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500">
+                                                        {selectedCustomer.phone}
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <span className="text-[10px] px-2 py-0.5 rounded bg-green-100 text-green-700 border border-green-200">Seleccionado</span>
-                                        </div>
-                                        <div className="text-xs text-gray-500">
-                                            {customers.find(c => c.id === selectedCustomerId)?.phone}
-                                        </div>
-                                        {deliveryMethod === DM.DELIVERY && selectedAddress && (
-                                            <div className="text-xs text-gray-700 mt-1 pt-1 border-t">
-                                                📍 {selectedAddress.street} {selectedAddress.number}
-                                                {selectedAddress.description && ` - ${selectedAddress.description}`}
+                                            <div className="flex items-start gap-2 pt-2 border-t border-gray-100">
+                                                <MapPin className="h-4 w-4 text-[#F24452] shrink-0 mt-0.5" />
+                                                <p className="text-sm text-gray-800 leading-snug">
+                                                    {selectedAddress!.street} {selectedAddress!.number}
+                                                    {selectedAddress!.description &&
+                                                        ` — ${selectedAddress!.description}`}
+                                                </p>
                                             </div>
-                                        )}
-                                    </div>
-                                ) : manualAddress ? (
+                                        </div>
+                                    ) : manualAddress ? (
+                                        <div className="bg-white rounded-lg border border-[#F24452]/20 p-3">
+                                            <p className="text-xs text-gray-500 mb-1">
+                                                Dirección manual (sin cliente)
+                                            </p>
+                                            <p className="text-sm text-gray-800 flex items-start gap-2">
+                                                <MapPin className="h-4 w-4 text-[#F24452] shrink-0 mt-0.5" />
+                                                {manualAddress}
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-start gap-2 text-sm text-gray-600 p-1">
+                                            <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-[#F24452]" />
+                                            <span>
+                                                Elegí cliente y dirección en un solo paso con{' '}
+                                                <strong>Elegir destino</strong>
+                                            </span>
+                                        </div>
+                                    )
+                                ) : selectedCustomerId && selectedCustomer ? (
                                     <div className="bg-white p-2 rounded border">
-                                        <div className="flex items-center justify-between">
-                                            <div className="text-sm text-gray-600">Sin cliente asociado</div>
-                                            <span className="text-[10px] px-2 py-0.5 rounded bg-green-100 text-green-700 border border-green-200">Seleccionado</span>
-                                        </div>
-                                        <div className="text-xs text-gray-700 mt-1">
-                                            📍 {manualAddress}
-                                        </div>
+                                        <div className="text-sm font-medium">{selectedCustomer.name}</div>
+                                        <div className="text-xs text-gray-500">{selectedCustomer.phone}</div>
                                     </div>
                                 ) : (
-                                    <div className="text-sm text-gray-500 italic p-2">
-                                        {deliveryMethod === DM.DELIVERY 
-                                            ? 'No hay cliente ni dirección seleccionados' 
-                                            : 'No hay cliente seleccionado'}
+                                    <div className="text-sm text-gray-500 italic p-1">
+                                        Sin cliente (opcional)
                                     </div>
                                 )}
                             </div>
 
                             {/* Total */}
-                            <div className="flex items-center justify-between bg-[#F24452]/10 p-3 rounded-lg">
-                                <span className="font-bold">TOTAL</span>
-                                <span className="font-bold text-lg text-[#F24452]">
-                                    {formatCurrency(total)}
-                                </span>
+                            <div className="space-y-1.5">
+                                {deliveryMethod === DM.DELIVERY && (
+                                    <div className="flex items-center justify-between text-sm text-gray-600 px-1 gap-2">
+                                        <span className="flex items-center gap-1 shrink-0">
+                                            <MapPin className="h-3.5 w-3.5 text-[#F24452]" />
+                                            Costo envío
+                                        </span>
+                                        <Input
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            value={deliveryFeeInput}
+                                            onChange={(e) => setDeliveryFeeInput(e.target.value)}
+                                            className="h-8 w-28 text-right bg-[#F2EDE4] border-[#E5D9D1] ml-auto"
+                                        />
+                                    </div>
+                                )}
+                                <div className="flex items-center justify-between text-sm text-gray-600 px-1">
+                                    <span>Subtotal</span>
+                                    <span className="tabular-nums">{formatCurrency(cartSubtotal)}</span>
+                                </div>
+                                <div className="flex items-center justify-between bg-[#F24452]/10 p-3 rounded-lg">
+                                    <span className="font-bold">TOTAL</span>
+                                    <span className="font-bold text-lg text-[#F24452] tabular-nums">
+                                        {formatCurrency(total)}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -8,7 +8,7 @@ Las entidades JPA viven en `backend/src/main/java/com/pizzeria/backend/model/`. 
 
 ## Negocio (`Business`)
 
-- `name`, y campos de **facturación SaaS**: `billingStatus` (`GRATIS`, `VIGENTE`, `MOROSO`, `VENCIDO`), `expiresAt` (opcional; obligatorio si el plan no es GRATIS).
+- `name`, `deliveryFee` (cargo por delivery del negocio), y campos de **facturación SaaS**: `billingStatus` (`GRATIS`, `VIGENTE`, `MOROSO`, `VENCIDO`), `expiresAt` (opcional; obligatorio si el plan no es GRATIS).
 - Los estados de pago se alinean con las fechas mediante `BusinessBillingService` y un job programado.
 
 ## Usuarios y negocio
@@ -23,7 +23,8 @@ Las entidades JPA viven en `backend/src/main/java/com/pizzeria/backend/model/`. 
 
 | Entidad | Descripción |
 |---------|-------------|
-| `Product` | Producto vendible (precio, nombre, etc.). |
+| `Product` | Producto vendible; **`category` obligatoria** (nombre alineado con `MenuCategory`). |
+| `MenuCategory` | Categoría de carta por negocio (Pizzas, Empanadas, etc.). |
 | `Combo` | Combo formado por ítems. |
 | `ComboItem` | Línea de combo: referencia a producto y cantidad/precio según modelo. |
 
@@ -38,8 +39,9 @@ Las entidades JPA viven en `backend/src/main/java/com/pizzeria/backend/model/`. 
 
 | Entidad | Descripción |
 |---------|-------------|
-| `Order` | Pedido. **Obligatorio** `cashShift` (turno de caja activo al crear). Incluye `customer` opcional, `address` o `manualAddress` para delivery, totales e ítems. |
+| `Order` | Pedido. **Obligatorio** `cashShift` (turno de caja activo al crear). Incluye `customer` opcional, `address` o `manualAddress` para delivery, totales, ítems y pagos divididos. |
 | `OrderItem` | Línea de pedido (producto y/o combo según reglas del DTO de creación). |
+| `OrderPayment` | Línea de cobro por pedido (`paymentMethod`, `amount`); varias por pedido (split payment). |
 
 ### Enumeraciones relevantes (`model/enums/`)
 
@@ -69,7 +71,8 @@ Los totales de gasto se calculan en el **servidor** (no delegar la suma al clien
 
 ```
 Business ─┬─ UserBusinessRole ─ User
-          ├─ Product, Combo, Customer, CashShift, Supplier, Supply, Expense
-          └─ Order ── OrderItem
+          ├─ Product, MenuCategory, Combo, Customer, CashShift, Supplier, Supply, Expense
+          └─ Order ─┬─ OrderItem
+                    ├─ OrderPayment
                     └── CashShift (FK obligatoria)
 ```

@@ -1,6 +1,7 @@
 package com.pizzeria.backend.model;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.pizzeria.backend.model.enums.DeliveryMethod;
@@ -19,6 +20,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -63,8 +65,15 @@ public class Order extends BaseEntity {
     private DeliveryMethod deliveryMethod;
 
     @Column(precision = 10, scale = 2)
+    private BigDecimal deliveryFee;
+
+    @Column(precision = 10, scale = 2)
     private BigDecimal total;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items;
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<OrderPayment> payments = new ArrayList<>();
 }

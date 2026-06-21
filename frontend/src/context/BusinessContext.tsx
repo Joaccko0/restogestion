@@ -6,6 +6,7 @@ import { MeService, type BusinessSummary } from '../services/me.service';
 interface BusinessContextType {
     currentBusiness: BusinessSummary | null;
     isLoading: boolean;
+    refreshBusiness: () => Promise<void>;
 }
 
 const BusinessContext = createContext<BusinessContextType | undefined>(undefined);
@@ -53,8 +54,18 @@ export const BusinessProvider = ({ children }: { children: ReactNode }) => {
         };
     }, [token, isAuthenticated]);
 
+    const refreshBusiness = async () => {
+        if (!isAuthenticated || !token) return;
+        try {
+            const list = await MeService.getMyBusinesses();
+            setCurrentBusiness(list.length > 0 ? list[0] : null);
+        } catch (error) {
+            console.error('Error actualizando negocio', error);
+        }
+    };
+
     return (
-        <BusinessContext.Provider value={{ currentBusiness, isLoading }}>
+        <BusinessContext.Provider value={{ currentBusiness, isLoading, refreshBusiness }}>
             {children}
         </BusinessContext.Provider>
     );

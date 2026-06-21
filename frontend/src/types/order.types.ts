@@ -38,10 +38,21 @@ export type DeliveryMethod = typeof DeliveryMethod[keyof typeof DeliveryMethod];
 export interface OrderItemResponse {
     productId: number | null;
     comboId: number | null;
-    name: string; // Nombre del producto o combo
+    name: string;
+    category?: string;
     quantity: number;
     unitPrice: number;
     subtotal: number;
+}
+
+export interface OrderPaymentResponse {
+    paymentMethod: PaymentMethod;
+    amount: number;
+}
+
+export interface OrderPaymentRequest {
+    paymentMethod: PaymentMethod;
+    amount: number;
 }
 
 // Respuesta completa de orden
@@ -51,14 +62,17 @@ export interface OrderResponse {
     customerName: string | null;
     addressId: number | null;
     deliveryAddress: string | null;
-    cashShiftId: number | null; // ID de la caja donde se creó el pedido
+    cashShiftId: number | null;
     orderStatus: OrderStatus;
     paymentStatus: PaymentStatus;
     paymentMethod: PaymentMethod;
     deliveryMethod: DeliveryMethod;
+    subtotal?: number;
+    deliveryFee?: number;
     total: number;
-    createdAt: string; // ISO date string
+    createdAt: string;
     items: OrderItemResponse[];
+    payments?: OrderPaymentResponse[];
 }
 
 // Request para crear un item
@@ -78,6 +92,7 @@ export interface CreateOrderRequest {
     paymentStatus?: PaymentStatus;
     items: OrderItemRequest[];
     note?: string;
+    deliveryFee?: number;
 }
 
 // Labels en español para los enums

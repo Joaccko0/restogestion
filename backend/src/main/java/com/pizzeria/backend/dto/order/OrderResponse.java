@@ -12,24 +12,33 @@ import com.pizzeria.backend.model.enums.PaymentStatus;
 public record OrderResponse(
     Long id,
     Long customerId,
-    String customerName, // Para mostrar rápido en la tabla
+    String customerName,
     Long addressId,
-    String deliveryAddress, // Dirección completa formateada
-    Long cashShiftId, // ID de la caja donde se creó el pedido
+    String deliveryAddress,
+    Long cashShiftId,
     OrderStatus orderStatus,
     PaymentStatus paymentStatus,
     PaymentMethod paymentMethod,
     DeliveryMethod deliveryMethod,
+    BigDecimal subtotal,
+    BigDecimal deliveryFee,
     BigDecimal total,
     LocalDateTime createdAt,
-    List<OrderItemResponse> items
+    List<OrderItemResponse> items,
+    List<OrderPaymentResponse> payments
 ) {
     public record OrderItemResponse(
         Long productId,
         Long comboId,
-        String name, // (Pizza Muzza o Combo Familiar)
+        String name,
+        String category,
         Integer quantity,
         BigDecimal unitPrice,
         BigDecimal subtotal
+    ) {}
+
+    public record OrderPaymentResponse(
+        PaymentMethod paymentMethod,
+        BigDecimal amount
     ) {}
 }

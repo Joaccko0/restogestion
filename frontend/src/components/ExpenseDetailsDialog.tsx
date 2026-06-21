@@ -1,6 +1,20 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, Building2, Receipt, DollarSign, Package } from 'lucide-react';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import { Calendar, Building2, Receipt, DollarSign, Package, Pencil } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 import type { Expense } from '../types/expense.types';
 
@@ -8,91 +22,109 @@ interface ExpenseDetailsDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     expense: Expense | null;
+    onEdit?: (expense: Expense) => void;
 }
 
-/**
- * Diálogo para mostrar detalles completos de un gasto
- * Muestra proveedor, fecha, items detallados y total
- */
-export function ExpenseDetailsDialog({ open, onOpenChange, expense }: ExpenseDetailsDialogProps) {
-    if (!expense) return null;
+function formatDate(dateString: string) {
+    const [y, m, d] = dateString.split('T')[0].split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('es-AR', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+    });
+}
 
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('es-AR', { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-        });
-    };
+export function ExpenseDetailsDialog({
+    open,
+    onOpenChange,
+    expense,
+    onEdit,
+}: ExpenseDetailsDialogProps) {
+    if (!expense) return null;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="bg-white max-w-3xl">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
+            <DialogContent className="bg-white max-w-3xl p-0 gap-0 max-h-[90vh] flex flex-col overflow-hidden">
+                <DialogHeader className="px-6 pt-6 pb-4 border-b border-[#E5D9D1] shrink-0">
+                    <DialogTitle className="flex items-center gap-2 text-lg">
                         <Receipt className="h-5 w-5 text-[#F24452]" />
-                        Detalle del Gasto #{expense.id}
+                        Gasto #{expense.id}
+                        <span className="ml-auto text-sm font-normal text-gray-400">
+                            {expense.items.length}{' '}
+                            {expense.items.length === 1 ? 'línea' : 'líneas'}
+                        </span>
                     </DialogTitle>
                 </DialogHeader>
-                
-                <div className="space-y-6">
-                    {/* Información general */}
-                    <div className="grid grid-cols-2 gap-4 p-4 bg-gradient-to-br from-[#F2EDE4] to-white rounded-lg border-2 border-[#E5D9D1]">
-                        <div className="flex items-center gap-2">
-                            <div className="p-2 bg-white rounded-lg border border-[#E5D9D1]">
+
+                <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-[#F2EDE4]/50 border border-[#E5D9D1]">
+                            <div className="p-2 bg-white rounded-lg border border-[#E5D9D1] shrink-0">
                                 <Calendar className="h-4 w-4 text-[#F24452]" />
                             </div>
-                            <div>
-                                <div className="text-xs text-gray-500 font-medium">Fecha</div>
-                                <div className="font-semibold">{formatDate(expense.date)}</div>
+                            <div className="min-w-0">
+                                <p className="text-xs text-gray-500 font-medium">Fecha</p>
+                                <p className="font-semibold text-sm capitalize truncate">
+                                    {formatDate(expense.date)}
+                                </p>
                             </div>
                         </div>
-                        
-                        <div className="flex items-center gap-2">
-                            <div className="p-2 bg-white rounded-lg border border-[#E5D9D1]">
+
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-[#F2EDE4]/50 border border-[#E5D9D1]">
+                            <div className="p-2 bg-white rounded-lg border border-[#E5D9D1] shrink-0">
                                 <Building2 className="h-4 w-4 text-[#F24452]" />
                             </div>
-                            <div>
-                                <div className="text-xs text-gray-500 font-medium">Proveedor</div>
-                                <div className="font-semibold">
+                            <div className="min-w-0">
+                                <p className="text-xs text-gray-500 font-medium">Proveedor</p>
+                                <p className="font-semibold text-sm truncate">
                                     {expense.supplierName || (
-                                        <span className="text-gray-400 italic">Sin proveedor (gasto interno)</span>
+                                        <span className="text-gray-400 italic font-normal">
+                                            Gasto interno
+                                        </span>
                                     )}
-                                </div>
+                                </p>
                             </div>
                         </div>
                     </div>
 
-                    {/* Items del gasto */}
                     <div>
-                        <div className="flex items-center gap-2 mb-3">
-                            <Package className="h-5 w-5 text-[#F24452]" />
-                            <h3 className="font-semibold">Líneas del Gasto</h3>
+                        <div className="flex items-center gap-2 mb-2">
+                            <Package className="h-4 w-4 text-[#F24452]" />
+                            <h3 className="font-semibold text-sm">Detalle de líneas</h3>
                         </div>
-                        <div className="border-2 border-[#E5D9D1] rounded-lg overflow-hidden">
+                        <div className="rounded-xl border border-[#E5D9D1] overflow-hidden">
                             <Table>
                                 <TableHeader className="bg-gradient-to-r from-[#F2EDE4] to-[#F8F4F0]">
-                                    <TableRow className="border-b-2 border-[#E5D9D1]">
-                                        <TableHead className="font-bold">Insumo</TableHead>
-                                        <TableHead className="font-bold text-right">Cantidad</TableHead>
-                                        <TableHead className="font-bold text-right">Precio Unitario</TableHead>
-                                        <TableHead className="font-bold text-right">Subtotal</TableHead>
+                                    <TableRow className="border-b border-[#E5D9D1] hover:bg-transparent">
+                                        <TableHead className="font-semibold text-xs">Insumo</TableHead>
+                                        <TableHead className="font-semibold text-xs text-right">
+                                            Cant.
+                                        </TableHead>
+                                        <TableHead className="font-semibold text-xs text-right hidden sm:table-cell">
+                                            P. unit.
+                                        </TableHead>
+                                        <TableHead className="font-semibold text-xs text-right">
+                                            Subtotal
+                                        </TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {expense.items.map((item) => (
-                                        <TableRow key={item.id} className="hover:bg-[#FFF9F5] transition-colors border-b border-[#E5D9D1]/50">
-                                            <TableCell className="font-medium">
+                                        <TableRow
+                                            key={item.id ?? item.supplyId}
+                                            className="border-b border-[#E5D9D1]/50 hover:bg-[#FFF9F5]"
+                                        >
+                                            <TableCell className="font-medium text-sm">
                                                 {item.supplyName}
                                             </TableCell>
-                                            <TableCell className="text-right">
+                                            <TableCell className="text-right tabular-nums text-sm">
                                                 {item.quantity}
                                             </TableCell>
-                                            <TableCell className="text-right">
+                                            <TableCell className="text-right tabular-nums text-sm hidden sm:table-cell">
                                                 {formatCurrency(item.unitPrice)}
                                             </TableCell>
-                                            <TableCell className="text-right font-semibold">
+                                            <TableCell className="text-right font-semibold text-[#F24452] tabular-nums text-sm">
                                                 {formatCurrency(item.subtotal)}
                                             </TableCell>
                                         </TableRow>
@@ -102,17 +134,35 @@ export function ExpenseDetailsDialog({ open, onOpenChange, expense }: ExpenseDet
                         </div>
                     </div>
 
-                    {/* Total */}
-                    <div className="flex justify-between items-center p-4 bg-gradient-to-r from-[#F24452]/10 to-[#F24452]/5 rounded-lg border-2 border-[#F24452]/30">
+                    <div className="flex justify-between items-center p-4 rounded-xl bg-[#F24452]/5 border border-[#F24452]/20">
                         <div className="flex items-center gap-2">
-                            <DollarSign className="h-6 w-6 text-[#F24452]" />
-                            <span className="text-lg font-semibold">Total del Gasto:</span>
+                            <DollarSign className="h-5 w-5 text-[#F24452]" />
+                            <span className="font-semibold">Total</span>
                         </div>
-                        <span className="text-3xl font-bold text-[#F24452]">
+                        <span className="text-2xl font-bold text-[#F24452] tabular-nums">
                             {formatCurrency(expense.total)}
                         </span>
                     </div>
                 </div>
+
+                <DialogFooter className="px-6 py-4 border-t border-[#E5D9D1] bg-gray-50/50 shrink-0 gap-2">
+                    <Button
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                        className="border-[#E5D9D1]"
+                    >
+                        Cerrar
+                    </Button>
+                    {onEdit && (
+                        <Button
+                            className="bg-[#F24452] hover:bg-[#F23D3D]"
+                            onClick={() => onEdit(expense)}
+                        >
+                            <Pencil className="h-4 w-4 mr-1.5" />
+                            Editar gasto
+                        </Button>
+                    )}
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     );

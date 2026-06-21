@@ -9,19 +9,25 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.pizzeria.backend.dto.order.CreateOrderRequest;
+import com.pizzeria.backend.dto.order.OrderItemRequest;
+import com.pizzeria.backend.dto.order.OrderPaymentRequest;
 import com.pizzeria.backend.dto.order.OrderResponse;
 import com.pizzeria.backend.dto.order.UpdateOrderStatusRequest;
 import com.pizzeria.backend.mapper.OrderMapper;
 import com.pizzeria.backend.model.Address;
+import com.pizzeria.backend.model.Business;
 import com.pizzeria.backend.model.Combo;
 import com.pizzeria.backend.model.Customer;
 import com.pizzeria.backend.model.Order;
 import com.pizzeria.backend.model.OrderItem;
+import com.pizzeria.backend.model.OrderPayment;
 import com.pizzeria.backend.model.Product;
+import com.pizzeria.backend.model.enums.PaymentMethod;
 import com.pizzeria.backend.model.enums.DeliveryMethod;
 import com.pizzeria.backend.model.enums.OrderStatus;
 import com.pizzeria.backend.model.enums.PaymentStatus;
 import com.pizzeria.backend.repository.AddressRepository;
+import com.pizzeria.backend.repository.BusinessRepository;
 import com.pizzeria.backend.repository.CashShiftRepository;
 import com.pizzeria.backend.repository.ComboRepository;
 import com.pizzeria.backend.repository.CustomerRepository;
@@ -42,6 +48,7 @@ public class OrderService {
     private final AddressRepository addressRepository;
     private final CashShiftService cashShiftService;
     private final CashShiftRepository cashShiftRepository;
+    private final BusinessRepository businessRepository;
     private final OrderMapper orderMapper;
 
     @Transactional
@@ -65,6 +72,7 @@ public class OrderService {
                 .deliveryMethod(request.deliveryMethod())
                 .createdAt(LocalDateTime.now())
                 .items(new ArrayList<>())
+                .payments(new ArrayList<>())
                 .build();
 
         // 2. Asignar Cliente (Si existe)
@@ -95,13 +103,25 @@ public class OrderService {
             }
         }
 
-        // 3. Procesar Items y Calcular Total
-        BigDecimal totalAmount = BigDecimal.ZERO;
+        // 3. Procesar Items
+        applyItems(order, request.items(), businessId);
 
-        for (var itemReq : request.items()) {
-            // Validación XOR (Producto O Combo)
+        // 4. Costo de delivery y total
+        applyDeliveryFeeAndTotal(order, businessId, request.deliveryMethod(), request.deliveryFee());
+        Order savedOrder = orderRepository.save(order);
+
+        return orderMapper.toResponse(savedOrder);
+    }
+
+    private void applyItems(Order order, List<OrderItemRequest> itemRequests, Long businessId) {
+        if (itemRequests == null || itemRequests.isEmpty()) {
+            throw new IllegalArgumentException("El pedido debe tener al menos un ítem");
+        }
+
+        for (var itemReq : itemRequests) {
             if (!itemReq.isValid()) {
-                throw new IllegalArgumentException("Cada ítem debe ser un Producto O un Combo (no ambos, no ninguno)");
+                throw new IllegalArgumentException(
+                        "Cada ítem debe ser un Producto O un Combo (no ambos, no ninguno)");
             }
 
             OrderItem item = new OrderItem();
@@ -111,40 +131,54 @@ public class OrderService {
             BigDecimal currentPrice;
 
             if (itemReq.productId() != null) {
-                // Es un Producto
                 Product p = productRepository.findByIdAndBusinessId(itemReq.productId(), businessId)
-                        .orElseThrow(() -> new EntityNotFoundException("Producto ID " + itemReq.productId() + " no encontrado"));
-                
+                        .orElseThrow(() -> new EntityNotFoundException(
+                                "Producto ID " + itemReq.productId() + " no encontrado"));
                 item.setProduct(p);
-                currentPrice = p.getPrice(); // Tomamos el precio ACTUAL
+                currentPrice = p.getPrice();
             } else {
-                // Es un Combo
                 Combo c = comboRepository.findByIdAndBusinessId(itemReq.comboId(), businessId)
-                        .orElseThrow(() -> new EntityNotFoundException("Combo ID " + itemReq.comboId() + " no encontrado"));
-                
+                        .orElseThrow(() -> new EntityNotFoundException(
+                                "Combo ID " + itemReq.comboId() + " no encontrado"));
                 item.setCombo(c);
-                currentPrice = c.getPrice(); // Tomamos el precio ACTUAL
+                currentPrice = c.getPrice();
             }
 
-            // 4. CONGELAR PRECIOS
             item.setUnitPrice(currentPrice);
-            
-            // Calcular Subtotal
-            BigDecimal subtotal = currentPrice.multiply(BigDecimal.valueOf(itemReq.quantity()));
-            item.setSubtotal(subtotal);
-
-            // Sumar al total general
-            totalAmount = totalAmount.add(subtotal);
-
-            // Agregar a la lista del pedido
+            item.setSubtotal(currentPrice.multiply(BigDecimal.valueOf(itemReq.quantity())));
             order.getItems().add(item);
         }
+    }
 
-        // 5. Finalizar y Guardar
-        order.setTotal(totalAmount);
-        Order savedOrder = orderRepository.save(order);
+    private void applyDeliveryFeeAndTotal(
+            Order order,
+            Long businessId,
+            DeliveryMethod deliveryMethod,
+            BigDecimal deliveryFeeOverride
+    ) {
+        BigDecimal itemsTotal = order.getItems().stream()
+                .map(OrderItem::getSubtotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        return orderMapper.toResponse(savedOrder);
+        BigDecimal deliveryFee = BigDecimal.ZERO;
+        if (deliveryMethod == DeliveryMethod.DELIVERY) {
+            if (deliveryFeeOverride != null) {
+                deliveryFee = deliveryFeeOverride.max(BigDecimal.ZERO);
+            } else if (order.getDeliveryFee() != null) {
+                deliveryFee = order.getDeliveryFee();
+            } else {
+                Business business = businessRepository.findById(businessId)
+                        .orElseThrow(() -> new EntityNotFoundException("Negocio no encontrado"));
+                deliveryFee = business.getDeliveryFee() != null ? business.getDeliveryFee() : BigDecimal.ZERO;
+            }
+        }
+
+        order.setDeliveryFee(deliveryFee);
+        order.setTotal(itemsTotal.add(deliveryFee));
+    }
+
+    private void recalculateOrderTotal(Order order, Long businessId, BigDecimal deliveryFeeOverride) {
+        applyDeliveryFeeAndTotal(order, businessId, order.getDeliveryMethod(), deliveryFeeOverride);
     }
 
     @Transactional(readOnly = true)
@@ -191,12 +225,29 @@ public class OrderService {
     }
 
     @Transactional
-    public OrderResponse updateOrderDetails(Long businessId, Long orderId, 
+    public OrderResponse updateOrderDetails(Long businessId, Long orderId,
             com.pizzeria.backend.dto.order.UpdateOrderDetailsRequest request) {
         Order order = orderRepository.findByIdAndBusinessId(orderId, businessId)
                 .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Pedido no encontrado"));
-        
-        // Actualizar solo los campos que vengan
+
+        if (order.getOrderStatus() == OrderStatus.CANCELLED) {
+            throw new IllegalStateException("No se puede editar un pedido cancelado");
+        }
+
+        if (request.items() != null) {
+            if (order.getOrderStatus() == OrderStatus.DELIVERED) {
+                throw new IllegalStateException(
+                        "No se pueden modificar los ítems de un pedido entregado");
+            }
+            if (order.getItems() == null) {
+                order.setItems(new ArrayList<>());
+            } else {
+                order.getItems().clear();
+            }
+            applyItems(order, request.items(), businessId);
+            resetPaymentIfNeeded(order);
+        }
+
         if (request.paymentStatus() != null) {
             order.setPaymentStatus(request.paymentStatus());
         }
@@ -205,10 +256,135 @@ public class OrderService {
         }
         if (request.deliveryMethod() != null) {
             order.setDeliveryMethod(request.deliveryMethod());
+            if (request.deliveryMethod() != DeliveryMethod.DELIVERY) {
+                order.setAddress(null);
+                order.setManualAddress(null);
+            }
+        }
+
+        if (request.customerId() != null) {
+            Customer customer = customerRepository.findByIdAndBusinessId(request.customerId(), businessId)
+                    .orElseThrow(() -> new EntityNotFoundException("Cliente no encontrado"));
+            order.setCustomer(customer);
+        }
+
+        DeliveryMethod effectiveDelivery = request.deliveryMethod() != null
+                ? request.deliveryMethod()
+                : order.getDeliveryMethod();
+
+        if (effectiveDelivery == DeliveryMethod.DELIVERY) {
+            if (request.addressId() != null) {
+                Address address = addressRepository.findByIdAndCustomer_BusinessId(request.addressId(), businessId)
+                        .orElseThrow(() -> new EntityNotFoundException("Dirección no encontrada"));
+
+                Long customerId = request.customerId() != null
+                        ? request.customerId()
+                        : (order.getCustomer() != null ? order.getCustomer().getId() : null);
+                if (customerId != null && !address.getCustomer().getId().equals(customerId)) {
+                    throw new IllegalArgumentException("La dirección no pertenece al cliente seleccionado");
+                }
+
+                order.setAddress(address);
+                order.setManualAddress(null);
+                if (order.getCustomer() == null) {
+                    order.setCustomer(address.getCustomer());
+                }
+            } else if (request.manualAddress() != null && !request.manualAddress().isBlank()) {
+                order.setManualAddress(request.manualAddress().trim());
+                order.setAddress(null);
+            } else if (request.deliveryMethod() == DeliveryMethod.DELIVERY) {
+                boolean hasAddress = order.getAddress() != null
+                        || (order.getManualAddress() != null && !order.getManualAddress().isBlank());
+                if (!hasAddress) {
+                    throw new IllegalArgumentException("Para DELIVERY se requiere addressId o manualAddress");
+                }
+            }
+        }
+
+        recalculateOrderTotal(order, businessId, request.deliveryFee());
+
+        if (request.payments() != null) {
+            applyPayments(order, request.payments());
+        } else if (request.paymentStatus() == PaymentStatus.PAID && request.paymentMethod() != null) {
+            applySinglePayment(order, request.paymentMethod());
+        } else if (request.paymentStatus() == PaymentStatus.PENDING) {
+            clearPayments(order);
+            order.setPaymentMethod(null);
         }
 
         orderRepository.save(order);
 
         return orderMapper.toResponse(order);
+    }
+
+    private void resetPaymentIfNeeded(Order order) {
+        if (order.getPaymentStatus() == PaymentStatus.PAID) {
+            order.setPaymentStatus(PaymentStatus.PENDING);
+            clearPayments(order);
+            order.setPaymentMethod(null);
+        }
+    }
+
+    private void clearPayments(Order order) {
+        if (order.getPayments() == null) {
+            order.setPayments(new ArrayList<>());
+        } else {
+            order.getPayments().clear();
+        }
+    }
+
+    private void applySinglePayment(Order order, PaymentMethod method) {
+        clearPayments(order);
+        BigDecimal total = order.getTotal() != null ? order.getTotal() : BigDecimal.ZERO;
+        order.getPayments().add(OrderPayment.builder()
+                .order(order)
+                .paymentMethod(method)
+                .amount(total)
+                .build());
+        order.setPaymentMethod(method);
+        order.setPaymentStatus(PaymentStatus.PAID);
+    }
+
+    private void applyPayments(Order order, List<OrderPaymentRequest> paymentRequests) {
+        if (paymentRequests.isEmpty()) {
+            clearPayments(order);
+            order.setPaymentMethod(null);
+            order.setPaymentStatus(PaymentStatus.PENDING);
+            return;
+        }
+
+        BigDecimal total = order.getTotal() != null ? order.getTotal() : BigDecimal.ZERO;
+        BigDecimal sum = BigDecimal.ZERO;
+        clearPayments(order);
+
+        for (OrderPaymentRequest req : paymentRequests) {
+            if (req.amount() == null || req.amount().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("Cada pago debe tener un monto mayor a cero");
+            }
+            sum = sum.add(req.amount());
+            order.getPayments().add(OrderPayment.builder()
+                    .order(order)
+                    .paymentMethod(req.paymentMethod())
+                    .amount(req.amount())
+                    .build());
+        }
+
+        if (sum.compareTo(total) != 0) {
+            throw new IllegalArgumentException(
+                    "La suma de los pagos debe coincidir con el total del pedido");
+        }
+
+        order.setPaymentStatus(PaymentStatus.PAID);
+        order.setPaymentMethod(resolvePrimaryPaymentMethod(paymentRequests));
+    }
+
+    private PaymentMethod resolvePrimaryPaymentMethod(List<OrderPaymentRequest> paymentRequests) {
+        if (paymentRequests.size() == 1) {
+            return paymentRequests.get(0).paymentMethod();
+        }
+        return paymentRequests.stream()
+                .max(java.util.Comparator.comparing(OrderPaymentRequest::amount))
+                .map(OrderPaymentRequest::paymentMethod)
+                .orElse(null);
     }
 }

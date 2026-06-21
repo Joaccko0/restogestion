@@ -22,6 +22,7 @@ interface KanbanBoardProps {
     orders: OrderResponse[];
     onOrderClick: (order: OrderResponse) => void;
     onStatusChange: (orderId: number, newStatus: OrderStatus) => Promise<void>;
+    onMarkPaid?: (orderId: number) => void;
 }
 
 // Estados a mostrar en el Kanban (sin CANCELLED)
@@ -35,7 +36,7 @@ const KANBAN_STATUSES: OrderStatus[] = [
 /**
  * Tablero Kanban con drag & drop funcional
  */
-export function KanbanBoard({ orders, onOrderClick, onStatusChange }: KanbanBoardProps) {
+export function KanbanBoard({ orders, onOrderClick, onStatusChange, onMarkPaid }: KanbanBoardProps) {
     const [activeOrder, setActiveOrder] = useState<OrderResponse | null>(null);
 
     const sensors = useSensors(
@@ -105,6 +106,7 @@ export function KanbanBoard({ orders, onOrderClick, onStatusChange }: KanbanBoar
                         status={status}
                         orders={ordersByStatus[status]}
                         onOrderClick={onOrderClick}
+                        onMarkPaid={onMarkPaid}
                     />
                 ))}
             </div>

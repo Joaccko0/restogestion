@@ -5,7 +5,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { CashShiftService } from '../services/cashshift.service';
 import { useBusiness } from '../context/BusinessContext';
-import type { CashShiftResponse } from '../types/cashshift.types';
+import type { CashShiftResponse, CloseCashShiftRequest } from '../types/cashshift.types';
 import { toast } from 'sonner';
 
 export function useCashShift() {
@@ -59,15 +59,15 @@ export function useCashShift() {
 
     // Cerrar la caja abierta
     const closeCash = useCallback(
-        async (endAmount: number) => {
+        async (request: CloseCashShiftRequest) => {
             if (!businessId) return;
             setLoading(true);
             setError(null);
             try {
-                const cashShift = await CashShiftService.closeCashShift(businessId, endAmount);
+                await CashShiftService.closeCashShift(businessId, request);
                 setOpenCashShift(null);
-                toast.success(`Caja cerrada con $${endAmount.toFixed(2)}`);
-                return cashShift;
+                toast.success(`Caja cerrada — efectivo en caja: $${request.endAmount.toFixed(2)}`);
+                return true;
             } catch (err: any) {
                 const message =
                     err.response?.data?.message || 'Error al cerrar caja';

@@ -6,7 +6,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { OrderService } from '../services/order.service';
-import type { OrderResponse, CreateOrderRequest, OrderStatus, PaymentStatus, PaymentMethod, DeliveryMethod } from '../types/order.types';
+import type {
+    OrderResponse,
+    CreateOrderRequest,
+    OrderStatus,
+    PaymentStatus,
+    PaymentMethod,
+    DeliveryMethod,
+    OrderItemRequest,
+    OrderPaymentRequest,
+} from '../types/order.types';
 import { OrderStatusLabels } from '../types/order.types';
 
 interface UseOrdersReturn {
@@ -16,7 +25,20 @@ interface UseOrdersReturn {
     loadOrders: () => Promise<void>;
     createOrder: (data: CreateOrderRequest) => Promise<boolean>;
     updateOrderStatus: (orderId: number, newStatus: OrderStatus) => Promise<boolean>;
-    updateOrderDetails: (orderId: number, details: { paymentStatus?: PaymentStatus; paymentMethod?: PaymentMethod; deliveryMethod?: DeliveryMethod }) => Promise<boolean>;
+    updateOrderDetails: (
+        orderId: number,
+        details: {
+            paymentStatus?: PaymentStatus;
+            paymentMethod?: PaymentMethod;
+            deliveryMethod?: DeliveryMethod;
+            customerId?: number;
+            addressId?: number;
+            manualAddress?: string;
+            deliveryFee?: number;
+            items?: OrderItemRequest[];
+            payments?: OrderPaymentRequest[];
+        }
+    ) => Promise<OrderResponse | null>;
     cancelOrder: (orderId: number) => Promise<boolean>;
 }
 
@@ -122,15 +144,25 @@ export function useOrders(businessId: number | undefined): UseOrdersReturn {
      */
     const updateOrderDetails = async (
         orderId: number,
-        details: { paymentStatus?: PaymentStatus; paymentMethod?: PaymentMethod; deliveryMethod?: DeliveryMethod }
-    ): Promise<boolean> => {
-        if (!businessId) return false;
+        details: {
+            paymentStatus?: PaymentStatus;
+            paymentMethod?: PaymentMethod;
+            deliveryMethod?: DeliveryMethod;
+            customerId?: number;
+            addressId?: number;
+            manualAddress?: string;
+            deliveryFee?: number;
+            items?: OrderItemRequest[];
+            payments?: OrderPaymentRequest[];
+        }
+    ): Promise<OrderResponse | null> => {
+        if (!businessId) return null;
 
         let previous: OrderResponse | null = null;
         setOrders(prev => prev.map(o => {
             if (o.id === orderId) {
                 previous = o;
-                return { ...o, ...details };
+                return { ...o, ...details } as OrderResponse;
             }
             return o;
         }));
@@ -138,15 +170,21 @@ export function useOrders(businessId: number | undefined): UseOrdersReturn {
         try {
             const updatedOrder = await OrderService.updateOrderDetails(businessId, orderId, details);
             setOrders(prev => prev.map(o => (o.id === orderId ? updatedOrder : o)));
-            toast.success('Detalles actualizados');
-            return true;
+            if (details.paymentStatus === 'PAID') {
+                toast.success('Cobro registrado', {
+                    description: `Pedido #${orderId} marcado como pagado`,
+                });
+            } else {
+                toast.success('Detalles actualizados');
+            }
+            return updatedOrder;
         } catch (err: any) {
             if (previous) {
                 setOrders(prev => prev.map(o => (o.id === orderId ? previous as OrderResponse : o)));
             }
             const message = err.response?.data?.message || 'Error al actualizar detalles';
             toast.error('No se pudieron actualizar los detalles', { description: message });
-            return false;
+            return null;
         }
     };
 

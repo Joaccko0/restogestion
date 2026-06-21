@@ -12,7 +12,8 @@
 - Paquetes principales esperados (revisar en árbol `com/pizzeria/backend`):
   - `auth/` (probable JWT/autenticación), `config/` (configuración), `controller/`, `dto/`, `mapper/`, `model/`, `repository/`, `service/`.
 - Tests en [backend/src/test/java/com/pizzeria/backend](backend/src/test/java/com/pizzeria/backend).
-- Para levantar local: PostgreSQL con `docker-compose.yml` en la **raíz del repo**; arranque conjunto con `start.ps1` / `start.bat` (Windows) o backend/frontend por separado.
+- Para levantar local: PostgreSQL con `backend/docker-compose.yml` (contenedor `pizzeria_db`); stack prod en `docker-compose.yml` de la raíz; arranque conjunto con `start.ps1` / `start.bat` (Windows) o backend/frontend por separado.
+- Migraciones SQL: `backend/migrations/` — ver [docs/MIGRATIONS.md](./MIGRATIONS.md).
 
 ## Frontend (React + Vite + Tailwind/shadcn)
 - Entrada: [frontend/src/main.tsx](frontend/src/main.tsx), App en [frontend/src/App.tsx](frontend/src/App.tsx).

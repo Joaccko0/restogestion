@@ -15,9 +15,10 @@ const client: AxiosInstance = axios.create({
 // --- INTERCEPTOR DE REQUEST: Añade el JWT a cada solicitud ---
 client.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
-        // Busca el JWT en localStorage y lo agrega como 'Bearer <token>'
+        const url = String(config.url ?? '');
+        const isPublicAuth = url.includes('/auth/login') || url.includes('/auth/register');
         const token = localStorage.getItem('jwt_token');
-        if (token) {
+        if (token && !isPublicAuth) {
             config.headers.Authorization = `Bearer ${token}`;
         }
         return config;

@@ -17,5 +17,6 @@ public record CreateOrderRequest(
     @NotNull PaymentMethod paymentMethod,
     PaymentStatus paymentStatus,
     @NotNull @Valid List<OrderItemRequest> items,
-    String note // Nota opcional ("Sin aceitunas")
+    String note, // Nota opcional ("Sin aceitunas")
+    java.math.BigDecimal deliveryFee // Opcional: override del costo de envío
 ) {}

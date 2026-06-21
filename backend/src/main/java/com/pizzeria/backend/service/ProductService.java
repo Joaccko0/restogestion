@@ -9,6 +9,7 @@ import com.pizzeria.backend.dto.product.ProductRequest;
 import com.pizzeria.backend.dto.product.ProductResponse;
 import com.pizzeria.backend.mapper.ProductMapper;
 import com.pizzeria.backend.model.Product;
+import com.pizzeria.backend.repository.MenuCategoryRepository;
 import com.pizzeria.backend.repository.ProductRepository;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -20,10 +21,12 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
+    private final MenuCategoryRepository menuCategoryRepository;
 
     // --- CREAR ---
     @Transactional // Asegura que se guarde todo o nada
     public ProductResponse createProduct(Long businessId, ProductRequest request) {
+        validateCategory(businessId, request.category());
         // 1. Convertir DTO a Entidad
         Product product = productMapper.toEntity(request);
         
@@ -51,6 +54,7 @@ public class ProductService {
     // --- EDITAR ---
     @Transactional
     public ProductResponse updateProduct(Long businessId, Long productId, ProductRequest request) {
+        validateCategory(businessId, request.category());
         // 1. Buscar el producto verificando que sea de MI negocio
         Product product = productRepository.findByIdAndBusinessId(productId, businessId)
                 .orElseThrow(() -> new EntityNotFoundException("Producto no encontrado"));
@@ -73,5 +77,15 @@ public class ProductService {
         // Esto mantiene la integridad de los pedidos viejos que tengan este producto.
         product.setActive(false);
         productRepository.save(product);
+    }
+
+    private void validateCategory(Long businessId, String category) {
+        if (category == null || category.isBlank()) {
+            throw new IllegalArgumentException("La categoría es obligatoria");
+        }
+        String code = category.trim();
+        if (!menuCategoryRepository.existsByBusinessIdAndCode(businessId, code)) {
+            throw new IllegalArgumentException("La categoría seleccionada no existe");
+        }
     }
 }

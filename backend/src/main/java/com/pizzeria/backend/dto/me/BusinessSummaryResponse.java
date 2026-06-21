@@ -1,5 +1,6 @@
 package com.pizzeria.backend.dto.me;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import com.pizzeria.backend.model.enums.BusinessBillingStatus;
@@ -13,5 +14,6 @@ public record BusinessSummaryResponse(
         BusinessBillingStatus billingStatus,
         LocalDate expiresAt,
         boolean warningExpirySoon,
-        long morosoGraceDaysLeft
+        long morosoGraceDaysLeft,
+        BigDecimal deliveryFee
 ) {}

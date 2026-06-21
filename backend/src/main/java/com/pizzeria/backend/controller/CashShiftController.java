@@ -64,7 +64,7 @@ public class CashShiftController {
             @RequestParam Long businessId,
             @RequestBody @Valid CloseCashShiftRequest request
     ) {
-        CashShift cashShift = cashShiftService.closeCashShift(businessId, request.endAmount());
+        CashShift cashShift = cashShiftService.closeCashShift(businessId, request);
         return ResponseEntity.ok(cashShiftMapper.toResponse(cashShift));
     }
 

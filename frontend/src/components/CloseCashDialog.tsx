@@ -1,6 +1,5 @@
 /**
- * Dialog para cerrar caja
- * Calcula automáticamente el monto esperado (inicial + ventas) y muestra advertencia si hay diferencia
+ * Dialog para cerrar caja con resumen del sistema y carga manual opcional
  */
 
 import { useState } from 'react';
@@ -10,25 +9,36 @@ import {
     DialogHeader,
     DialogTitle,
     DialogFooter,
-    DialogDescription
+    DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, AlertTriangle } from 'lucide-react';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { DollarSign, AlertTriangle, ChevronDown, ChevronUp, ClipboardList, Banknote } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
-import type { CashShiftResponse } from '../types/cashshift.types';
+import { getOrderPaymentBreakdown } from '../lib/orderPayments';
+import type { CashShiftResponse, CloseCashShiftRequest } from '../types/cashshift.types';
 import type { OrderResponse } from '../types/order.types';
+import type { MenuCategory } from '../services/menuCategory.service';
 
 interface CloseCashDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSubmit: (endAmount: number) => Promise<any>;
+    onSubmit: (request: CloseCashShiftRequest) => Promise<unknown>;
     cashShift: CashShiftResponse | null;
-    orders: OrderResponse[]; // Órdenes del turno actual
-    onClosed?: () => void; // Callback cuando se cierra la caja exitosamente
+    orders: OrderResponse[];
+    menuCategories: MenuCategory[];
+    onClosed?: () => void;
     loading?: boolean;
 }
 
@@ -38,191 +48,207 @@ export function CloseCashDialog({
     onSubmit,
     cashShift,
     orders,
+    menuCategories,
     onClosed,
-    loading = false
+    loading = false,
 }: CloseCashDialogProps) {
-    const [endAmount, setEndAmount] = useState<string>('');
-    const [error, setError] = useState<string>('');
+    const [endAmount, setEndAmount] = useState('');
+    const [error, setError] = useState('');
     const [showConfirm, setShowConfirm] = useState(false);
+    const [showManual, setShowManual] = useState(false);
+    const [manualTotal, setManualTotal] = useState('');
+    const [categoryAmounts, setCategoryAmounts] = useState<Record<string, string>>({});
 
-    // Filtrar solo ordenes del cashShift actual
-    const currentCashShiftOrders = orders.filter(
-        (order) => order.cashShiftId === cashShift?.id
+    const shiftOrders = orders.filter((o) => o.cashShiftId === cashShift?.id);
+    const paidOrders = shiftOrders.filter(
+        (o) => o.paymentStatus === 'PAID' && o.orderStatus !== 'CANCELLED'
+    );
+    const unpaidOrders = shiftOrders.filter(
+        (o) => o.paymentStatus !== 'PAID' && o.orderStatus !== 'CANCELLED'
     );
 
-    // Calcular monto de ventas (dinero en efectivo recibido)
-    const calculateSalesAmount = () => {
-        return currentCashShiftOrders
-            .filter((order) => order.paymentMethod === 'CASH') // Solo pagos en efectivo
-            .reduce((sum, order) => sum + order.total, 0);
-    };
-
-    // Calcular desglose por método de pago
-    const calculatePaymentBreakdown = () => {
-        const breakdown = {
-            CASH: 0,
-            CARD: 0,
-            TRANSFER: 0,
-        };
-
-        currentCashShiftOrders.forEach((order) => {
-            if (order.paymentMethod in breakdown) {
-                breakdown[order.paymentMethod as keyof typeof breakdown] += order.total;
-            }
-        });
-
-        return breakdown;
-    };
-
-    // Detectar pedidos no pagados (excluir cancelados)
-    const unpaidOrders = currentCashShiftOrders.filter(
-        (order) => order.paymentStatus !== 'PAID' && order.orderStatus !== 'CANCELLED'
+    const paymentBreakdown = paidOrders.reduce(
+        (acc, order) => {
+            const breakdown = getOrderPaymentBreakdown(order);
+            acc.CASH += breakdown.CASH;
+            acc.CARD += breakdown.CARD;
+            acc.TRANSFER += breakdown.TRANSFER;
+            return acc;
+        },
+        { CASH: 0, CARD: 0, TRANSFER: 0 } as Record<string, number>
     );
-    const hasUnpaidOrders = unpaidOrders.length > 0;
 
+    const systemTotalCollected =
+        paymentBreakdown.CASH + paymentBreakdown.CARD + paymentBreakdown.TRANSFER;
+    const cashSales = paymentBreakdown.CASH;
     const startAmount = cashShift?.startAmount || 0;
-    const salesAmount = calculateSalesAmount();
-    const expectedAmount = startAmount + salesAmount;
-    const paymentBreakdown = calculatePaymentBreakdown();
+    const expectedInDrawer = startAmount + cashSales;
 
-    const handleSubmit = async () => {
+    const resetForm = () => {
+        setEndAmount('');
         setError('');
-
-        // Validaciones
-        if (!endAmount.trim()) {
-            setError('Por favor ingresa el monto final');
-            return;
-        }
-
-        const amount = parseFloat(endAmount);
-        if (isNaN(amount)) {
-            setError('El monto debe ser un número válido');
-            return;
-        }
-
-        if (amount < 0) {
-            setError('El monto no puede ser negativo');
-            return;
-        }
-
-        // Verificar si hay diferencia
-        const difference = Math.abs(expectedAmount - amount);
-        if (difference > 0.01) {
-            // Mostrar diálogo de confirmación si hay diferencia
-            setShowConfirm(true);
-            return;
-        }
-
-        // Si no hay diferencia, cerrar directamente
-        await performClose(amount);
+        setShowConfirm(false);
+        setShowManual(false);
+        setManualTotal('');
+        setCategoryAmounts({});
     };
 
-    const performClose = async (amount: number) => {
-        try {
-            await onSubmit(amount);
-            setEndAmount('');
-            onOpenChange(false);
-            // Llamar callback para recargar órdenes
-            if (onClosed) {
-                onClosed();
+    const buildRequest = (physicalAmount: number): CloseCashShiftRequest => {
+        const request: CloseCashShiftRequest = { endAmount: physicalAmount };
+
+        if (showManual && manualTotal.trim()) {
+            const parsed = parseFloat(manualTotal);
+            if (!isNaN(parsed) && parsed >= 0) {
+                request.manualTotalCollected = parsed;
             }
+        }
+
+        const categorySales = menuCategories
+            .map((cat) => {
+                const val = categoryAmounts[cat.code];
+                if (!val?.trim()) return null;
+                const amount = parseFloat(val);
+                if (isNaN(amount) || amount <= 0) return null;
+                return { category: cat.code, amount };
+            })
+            .filter(Boolean) as CloseCashShiftRequest['categorySales'];
+
+        if (categorySales && categorySales.length > 0) {
+            request.categorySales = categorySales;
+        }
+
+        return request;
+    };
+
+    const performClose = async (physicalAmount: number) => {
+        try {
+            await onSubmit(buildRequest(physicalAmount));
+            resetForm();
+            onOpenChange(false);
+            onClosed?.();
         } catch (err) {
             console.error('Error closing cash:', err);
         }
     };
 
-    const handleOpenChange = (newOpen: boolean) => {
-        if (!loading) {
-            setEndAmount('');
-            setError('');
-            setShowConfirm(false);
-            onOpenChange(newOpen);
+    const handleSubmit = async () => {
+        setError('');
+        if (!endAmount.trim()) {
+            setError('Ingresá el efectivo que hay en la caja');
+            return;
         }
+        const amount = parseFloat(endAmount);
+        if (isNaN(amount) || amount < 0) {
+            setError('Monto inválido');
+            return;
+        }
+        if (Math.abs(expectedInDrawer - amount) > 0.01) {
+            setShowConfirm(true);
+            return;
+        }
+        await performClose(amount);
     };
 
-    const difference = expectedAmount - parseFloat(endAmount || '0');
-    const isDifference = Math.abs(difference) > 0.01;
+    const difference = expectedInDrawer - parseFloat(endAmount || '0');
+    const categoryManualSum = Object.values(categoryAmounts).reduce((sum, v) => {
+        const n = parseFloat(v);
+        return sum + (isNaN(n) ? 0 : n);
+    }, 0);
 
     return (
         <>
-            <Dialog open={open} onOpenChange={handleOpenChange}>
-                <DialogContent className="bg-white sm:max-w-[500px]">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
+            <Dialog
+                open={open}
+                onOpenChange={(v) => {
+                    if (!loading) {
+                        if (!v) resetForm();
+                        onOpenChange(v);
+                    }
+                }}
+            >
+                <DialogContent className="bg-white sm:max-w-[560px] max-h-[90vh] overflow-y-auto p-0 gap-0">
+                    <DialogHeader className="px-6 pt-6 pb-4 border-b border-[#E5D9D1]">
+                        <DialogTitle className="flex items-center gap-2 text-lg">
                             <DollarSign className="w-5 h-5 text-[#F24452]" />
-                            Cerrar Caja
+                            Cerrar caja
                         </DialogTitle>
                         <DialogDescription>
-                            Verifica el monto esperado y registra el monto final en la caja
+                            Verificá el efectivo en caja. Podés cargar un resumen manual del día.
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="space-y-4">
-                        {/* Advertencia de pedidos no pagados */}
-                        {hasUnpaidOrders && (
-                            <Card className="border-red-300 bg-red-50">
-                                <CardContent className="pt-4">
-                                    <div className="flex items-start gap-3">
-                                        <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                                        <div className="text-red-800">
-                                            <p className="font-semibold mb-1">⚠️ Hay {unpaidOrders.length} pedido{unpaidOrders.length > 1 ? 's' : ''} sin pagar</p>
-                                            <p className="text-sm">
-                                                Verifica que todos los pedidos estén pagados antes de cerrar la caja.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                    <div className="px-6 py-5 space-y-4">
+                        {unpaidOrders.length > 0 && (
+                            <div className="flex items-start gap-3 p-3 rounded-xl border border-[#F24452]/30 bg-[#F24452]/5">
+                                <AlertTriangle className="h-5 w-5 text-[#F24452] shrink-0 mt-0.5" />
+                                <div className="text-sm">
+                                    <p className="font-semibold text-[#262626]">
+                                        {unpaidOrders.length} pedido
+                                        {unpaidOrders.length > 1 ? 's' : ''} sin cobrar
+                                    </p>
+                                    <p className="text-gray-600 mt-0.5">
+                                        Revisá que estén cobrados antes de cerrar.
+                                    </p>
+                                </div>
+                            </div>
                         )}
 
-                        {/* Resumen de caja */}
-                        <Card className="bg-white border-[#E5D9D1]">
-                            <CardHeader className="pb-3">
-                                <CardTitle className="text-sm">Resumen de Turno</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                <div className="flex justify-between items-center py-2 border-b">
-                                    <span className="text-sm text-gray-600">Monto Inicial:</span>
-                                    <span className="font-semibold">{formatCurrency(startAmount)}</span>
+                        <div className="rounded-xl border border-[#E5D9D1] overflow-hidden">
+                            <div className="px-4 py-3 bg-[#F2EDE4]/60 border-b border-[#E5D9D1]">
+                                <p className="text-sm font-semibold text-[#262626]">
+                                    Resumen del sistema
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                    {paidOrders.length} pedidos cobrados en este turno
+                                </p>
+                            </div>
+                            <div className="p-4 space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">Monto inicial</span>
+                                    <span className="font-medium tabular-nums">
+                                        {formatCurrency(startAmount)}
+                                    </span>
                                 </div>
-                                <div className="flex justify-between items-center py-2 border-b">
-                                    <span className="text-sm text-gray-600">Ventas (efectivo):</span>
-                                    <span className="font-semibold text-green-600">{formatCurrency(salesAmount)}</span>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">Efectivo</span>
+                                    <span className="font-medium tabular-nums text-[#262626]">
+                                        {formatCurrency(cashSales)}
+                                    </span>
                                 </div>
-                                
-                                {/* Desglose por método de pago */}
-                                <div className="py-2 border-b">
-                                    <p className="text-xs text-gray-500 mb-2">Recaudación por método:</p>
-                                    <div className="space-y-1 pl-2">
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-gray-600">💵 Efectivo:</span>
-                                            <span className="font-medium">{formatCurrency(paymentBreakdown.CASH)}</span>
-                                        </div>
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-gray-600">💳 Tarjeta:</span>
-                                            <span className="font-medium">{formatCurrency(paymentBreakdown.CARD)}</span>
-                                        </div>
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-gray-600">🏦 Transferencia:</span>
-                                            <span className="font-medium">{formatCurrency(paymentBreakdown.TRANSFER)}</span>
-                                        </div>
-                                        <div className="flex justify-between text-sm font-semibold pt-1 border-t">
-                                            <span className="text-gray-800">Total recaudado:</span>
-                                            <span className="text-green-600">{formatCurrency(paymentBreakdown.CASH + paymentBreakdown.CARD + paymentBreakdown.TRANSFER)}</span>
-                                        </div>
-                                    </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">Tarjeta</span>
+                                    <span className="font-medium tabular-nums text-[#262626]">
+                                        {formatCurrency(paymentBreakdown.CARD)}
+                                    </span>
                                 </div>
-                                
-                                <div className="flex justify-between items-center py-2 bg-[#F2EDE4] px-3 rounded">
-                                    <span className="text-sm font-semibold">Monto Esperado en Caja:</span>
-                                    <span className="font-bold text-lg">{formatCurrency(expectedAmount)}</span>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">Transferencia</span>
+                                    <span className="font-medium tabular-nums text-[#262626]">
+                                        {formatCurrency(paymentBreakdown.TRANSFER)}
+                                    </span>
                                 </div>
-                            </CardContent>
-                        </Card>
+                                <div className="flex justify-between pt-2 border-t border-[#E5D9D1]">
+                                    <span className="font-medium text-gray-700">Total recaudado</span>
+                                    <span className="font-bold text-[#F24452] tabular-nums">
+                                        {formatCurrency(systemTotalCollected)}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between p-2 rounded-lg bg-[#F2EDE4]/50">
+                                    <span className="font-semibold text-[#262626]">
+                                        Efectivo esperado en caja
+                                    </span>
+                                    <span className="font-bold tabular-nums">
+                                        {formatCurrency(expectedInDrawer)}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
 
-                        {/* Input monto final */}
                         <div className="space-y-2">
-                            <Label htmlFor="endAmount">Monto Final en Caja</Label>
+                            <Label htmlFor="endAmount" className="flex items-center gap-1.5">
+                                <Banknote className="h-4 w-4 text-[#F24452]" />
+                                Efectivo en caja (conteo físico) *
+                            </Label>
                             <div className="relative">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">
                                     $
@@ -230,99 +256,168 @@ export function CloseCashDialog({
                                 <Input
                                     id="endAmount"
                                     type="number"
-                                    placeholder="0.00"
+                                    placeholder="0,00"
                                     value={endAmount}
                                     onChange={(e) => {
                                         setEndAmount(e.target.value);
                                         setError('');
                                     }}
-                                    className="pl-8 bg-[#F2EDE4] border-[#E5D9D1] focus:border-[#F24452] focus:ring-0"
+                                    className="pl-8 bg-[#F2EDE4] border-[#E5D9D1]"
                                     min="0"
                                     step="0.01"
                                     disabled={loading}
-                                    onKeyPress={(e) => {
-                                        if (e.key === 'Enter' && !loading) {
-                                            handleSubmit();
-                                        }
-                                    }}
                                 />
                             </div>
-                            {error && <p className="text-sm text-red-500">{error}</p>}
+                            {error && <p className="text-sm text-[#F23D3D]">{error}</p>}
+                            {endAmount && Math.abs(difference) > 0.01 && (
+                                <p className="text-sm text-amber-700 flex items-center gap-1.5">
+                                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                                    Diferencia: {formatCurrency(Math.abs(difference))}{' '}
+                                    {difference > 0 ? '(faltante)' : '(sobrante)'}
+                                </p>
+                            )}
                         </div>
 
-                        {/* Mostrar diferencia si existe */}
-                        {endAmount && isDifference && (
-                            <Card className="border-orange-300 bg-orange-50">
-                                <CardContent className="pt-4">
-                                    <div className="flex items-start gap-3">
-                                        <AlertTriangle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
-                                        <div className="text-orange-800">
-                                            <p className="font-semibold mb-1">Diferencia detectada:</p>
-                                            <p className="text-sm">
-                                                Se esperaba ${expectedAmount.toFixed(2)} pero registraste $
-                                                {parseFloat(endAmount).toFixed(2)} ({difference > 0 ? '+' : ''}
-                                                ${difference.toFixed(2)})
-                                            </p>
-                                        </div>
+                        <div className="rounded-xl border border-dashed border-[#E5D9D1]">
+                            <button
+                                type="button"
+                                className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-[#F2EDE4]/40 transition-colors rounded-xl"
+                                onClick={() => setShowManual(!showManual)}
+                            >
+                                <div className="flex items-center gap-2">
+                                    <ClipboardList className="h-4 w-4 text-[#F24452]" />
+                                    <div>
+                                        <p className="text-sm font-semibold text-[#262626]">
+                                            Resumen manual del día
+                                        </p>
+                                        <p className="text-xs text-gray-500">
+                                            Opcional — si anotaste ventas en papel
+                                        </p>
                                     </div>
-                                </CardContent>
-                            </Card>
-                        )}
+                                </div>
+                                {showManual ? (
+                                    <ChevronUp className="h-4 w-4 text-gray-400" />
+                                ) : (
+                                    <ChevronDown className="h-4 w-4 text-gray-400" />
+                                )}
+                            </button>
+
+                            {showManual && (
+                                <div className="px-4 pb-4 space-y-4 border-t border-[#E5D9D1] pt-4">
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="manualTotal" className="text-sm">
+                                            Total recaudado del turno
+                                        </Label>
+                                        <Input
+                                            id="manualTotal"
+                                            type="number"
+                                            placeholder={
+                                                systemTotalCollected > 0
+                                                    ? systemTotalCollected.toFixed(2)
+                                                    : '0,00'
+                                            }
+                                            value={manualTotal}
+                                            onChange={(e) => setManualTotal(e.target.value)}
+                                            className="bg-[#F2EDE4] border-[#E5D9D1]"
+                                            min="0"
+                                            step="0.01"
+                                        />
+                                        <p className="text-xs text-gray-500">
+                                            Si lo completás, las estadísticas usarán este monto para
+                                            este turno en lugar de sumar pedidos del sistema.
+                                        </p>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label className="text-sm">Ventas por categoría</Label>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            {menuCategories.map((cat) => (
+                                                <div key={cat.code} className="space-y-1">
+                                                    <Label className="text-xs text-gray-500">
+                                                        {cat.name}
+                                                    </Label>
+                                                    <Input
+                                                        type="number"
+                                                        placeholder="0"
+                                                        value={categoryAmounts[cat.code] || ''}
+                                                        onChange={(e) =>
+                                                            setCategoryAmounts((prev) => ({
+                                                                ...prev,
+                                                                [cat.code]: e.target.value,
+                                                            }))
+                                                        }
+                                                        className="h-9 bg-[#F2EDE4] border-[#E5D9D1] text-sm"
+                                                        min="0"
+                                                        step="0.01"
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                        {categoryManualSum > 0 && manualTotal && (
+                                            <p className="text-xs text-gray-500">
+                                                Suma categorías:{' '}
+                                                {formatCurrency(categoryManualSum)}
+                                                {Math.abs(
+                                                    categoryManualSum - parseFloat(manualTotal)
+                                                ) > 0.01 && (
+                                                    <span className="text-amber-600 ml-1">
+                                                        (no coincide con el total)
+                                                    </span>
+                                                )}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => handleOpenChange(false)}
-                            disabled={loading}
-                        >
+                    <DialogFooter className="px-6 py-4 border-t border-[#E5D9D1] bg-gray-50/50">
+                        <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
                             Cancelar
                         </Button>
                         <Button
-                            onClick={handleSubmit}
+                            onClick={() => void handleSubmit()}
                             disabled={loading}
-                            className="bg-[#F24452] hover:bg-[#d63c47]"
+                            className="bg-[#F24452] hover:bg-[#F23D3D]"
                         >
-                            {loading ? 'Cerrando...' : 'Cerrar Caja'}
+                            {loading ? 'Cerrando...' : 'Cerrar caja'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
-            {/* Diálogo de confirmación si hay diferencia */}
             <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
                 <AlertDialogContent className="bg-white">
                     <AlertDialogHeader>
                         <AlertDialogTitle className="flex items-center gap-2">
-                            <AlertTriangle className="h-5 w-5 text-orange-600" />
-                            Confirmar Diferencia en Caja
+                            <AlertTriangle className="h-5 w-5 text-amber-600" />
+                            Diferencia en caja
                         </AlertDialogTitle>
+                        <AlertDialogDescription asChild>
+                            <div className="space-y-2 text-sm text-gray-600">
+                                <p>
+                                    Esperado:{' '}
+                                    <strong>{formatCurrency(expectedInDrawer)}</strong> — Contado:{' '}
+                                    <strong>{formatCurrency(parseFloat(endAmount))}</strong>
+                                </p>
+                                <p>
+                                    Diferencia:{' '}
+                                    <span className="font-semibold text-amber-700">
+                                        {formatCurrency(Math.abs(difference))}
+                                    </span>
+                                </p>
+                            </div>
+                        </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogDescription>
-                        <div className="space-y-3">
-                            <p>
-                                Se esperaba <strong>${expectedAmount.toFixed(2)}</strong> pero
-                                registraste <strong>${parseFloat(endAmount).toFixed(2)}</strong>
-                            </p>
-                            <p>
-                                <strong>Diferencia:</strong>{' '}
-                                <span className={difference > 0 ? 'text-red-600' : 'text-green-600'}>
-                                    {difference > 0 ? '-' : '+'} ${Math.abs(difference).toFixed(2)}
-                                </span>
-                            </p>
-                            <p className="text-sm text-gray-500">
-                                ¿Estás seguro de que deseas cerrar la caja con esta diferencia?
-                            </p>
-                        </div>
-                    </AlertDialogDescription>
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={loading}>Cancelar</AlertDialogCancel>
+                        <AlertDialogCancel disabled={loading}>Volver</AlertDialogCancel>
                         <AlertDialogAction
                             disabled={loading}
-                            onClick={() => performClose(parseFloat(endAmount))}
-                            className="bg-[#F24452] hover:bg-[#d63c47]"
+                            onClick={() => void performClose(parseFloat(endAmount))}
+                            className="bg-[#F24452] hover:bg-[#F23D3D]"
                         >
-                            {loading ? 'Cerrando...' : 'Sí, cerrar caja'}
+                            Cerrar igual
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

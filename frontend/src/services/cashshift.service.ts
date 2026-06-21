@@ -40,10 +40,13 @@ export const CashShiftService = {
     /**
      * Cerrar la caja abierta
      */
-    async closeCashShift(businessId: number, endAmount: number): Promise<CashShiftResponse> {
+    async closeCashShift(
+        businessId: number,
+        request: CloseCashShiftRequest
+    ): Promise<CashShiftResponse> {
         const response = await apiClient.put<CashShiftResponse>(
             '/cash-shifts/close',
-            { endAmount } as CloseCashShiftRequest,
+            request,
             { params: { businessId } }
         );
         return response.data;

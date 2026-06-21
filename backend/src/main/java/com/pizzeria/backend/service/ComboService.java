@@ -58,6 +58,33 @@ public class ComboService {
         return comboMapper.toResponse(savedCombo);
     }
 
+    @Transactional
+    public ComboResponse updateCombo(Long businessId, Long comboId, ComboRequest request) {
+        Combo combo = comboRepository.findByIdAndBusinessId(comboId, businessId)
+                .orElseThrow(() -> new EntityNotFoundException("Combo no encontrado"));
+
+        combo.setName(request.name());
+        combo.setPrice(request.price());
+        combo.getComboItems().clear();
+
+        request.items().forEach(itemDto -> {
+            Product product = productRepository.findByIdAndBusinessId(itemDto.productId(), businessId)
+                    .orElseThrow(() -> new EntityNotFoundException(
+                            "Producto ID " + itemDto.productId() + " no encontrado o no pertenece a este negocio"));
+
+            ComboItem comboItem = ComboItem.builder()
+                    .combo(combo)
+                    .product(product)
+                    .quantity(itemDto.quantity())
+                    .build();
+
+            combo.getComboItems().add(comboItem);
+        });
+
+        Combo savedCombo = comboRepository.save(combo);
+        return comboMapper.toResponse(savedCombo);
+    }
+
     @Transactional(readOnly = true)
     public List<ComboResponse> getAllCombos(Long businessId) {
         return comboRepository.findByBusinessIdAndActiveTrue(businessId).stream()

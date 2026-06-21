@@ -1,140 +1,170 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useBusiness } from '../context/BusinessContext';
 import { useCustomers } from '../hooks/useCustomers';
 import { useSearch } from '../hooks/useSearch';
-import { Plus, Search, Users } from 'lucide-react';
+import { Plus, Search, Users, MapPin, RefreshCw } from 'lucide-react';
 
 import { CustomerForm } from '../components/CustomerForm';
 import { CustomerTable } from '../components/CustomerTable';
 import { AddressManagerDialog } from '../components/AddressManagerDialog';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 import type { Customer } from '../types/customer.types';
 
-/**
- * Página de gestión de clientes
- * Funcionalidades: CRUD completo de clientes y sus direcciones
- */
 export default function CustomersPage() {
     const { currentBusiness } = useBusiness();
-    
-    // Hook de lógica de negocio
-    const { customers, isLoading, createCustomer, updateCustomer, deleteCustomer, loadCustomers } = useCustomers(
-        currentBusiness?.id || null
-    );
 
-    // Estado de búsqueda
+    const { customers, isLoading, createCustomer, updateCustomer, deleteCustomer, loadCustomers } =
+        useCustomers(currentBusiness?.id || null);
+
     const [searchTerm, setSearchTerm] = useState('');
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const filteredCustomers = useSearch(customers, searchTerm, ['name', 'phone']);
 
-    // Estados de modales
     const [isCustomerFormOpen, setIsCustomerFormOpen] = useState(false);
     const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
     const [customerToDelete, setCustomerToDelete] = useState<number | null>(null);
-    
-    // Estado para gestión de direcciones
+
     const [isAddressManagerOpen, setIsAddressManagerOpen] = useState(false);
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
-    // Manejadores de clientes
+    const stats = useMemo(() => {
+        const withAddresses = customers.filter((c) => c.addresses.length > 0).length;
+        return {
+            total: customers.length,
+            withAddresses,
+            showing: filteredCustomers.length,
+        };
+    }, [customers, filteredCustomers.length]);
+
     const handleOpenCustomerForm = (customer?: Customer) => {
-        if (customer) {
-            setEditingCustomer(customer);
-        } else {
-            setEditingCustomer(null);
-        }
+        setEditingCustomer(customer ?? null);
         setIsCustomerFormOpen(true);
     };
 
-    const handleSubmitCustomer = async (formData: any) => {
+    const handleSubmitCustomer = async (formData: Parameters<typeof createCustomer>[0]) => {
         if (editingCustomer) {
             return await updateCustomer(editingCustomer.id, formData);
-        } else {
-            return await createCustomer(formData);
         }
+        return await createCustomer(formData);
     };
 
-    const handleDeleteCustomerClick = (id: number) => {
-        setCustomerToDelete(id);
-    };
-
-    const handleConfirmDeleteCustomer = async () => {
-        if (customerToDelete) {
-            await deleteCustomer(customerToDelete);
-            setCustomerToDelete(null);
-        }
-    };
-
-    // Manejadores de direcciones
-    const handleManageAddresses = (customer: Customer) => {
-        setSelectedCustomer(customer);
-        setIsAddressManagerOpen(true);
-    };
-
-    const handleAddressesChanged = async () => {
+    const handleRefresh = async () => {
+        setIsRefreshing(true);
         await loadCustomers();
+        setIsRefreshing(false);
     };
 
-    // Actualizar el cliente seleccionado cuando se actualicen los clientes
     useEffect(() => {
         if (selectedCustomer) {
-            const updatedCustomer = customers.find(c => c.id === selectedCustomer.id);
+            const updatedCustomer = customers.find((c) => c.id === selectedCustomer.id);
             if (updatedCustomer) {
                 setSelectedCustomer(updatedCustomer);
             }
         }
-    }, [customers]);
+    }, [customers, selectedCustomer]);
 
     return (
-        <div className="p-6 space-y-6">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-[#0D0D0D] flex items-center gap-2">
-                        <Users className="h-8 w-8 text-[#F24452]" />
+                    <h2 className="text-2xl font-bold text-[#262626] flex items-center gap-2">
+                        <Users className="h-7 w-7 text-[#F24452]" />
                         Clientes
-                    </h1>
-                    <p className="text-gray-600 mt-1">
-                        Gestiona tus clientes y sus direcciones de entrega
+                    </h2>
+                    <p className="text-gray-500 mt-0.5">
+                        Gestioná clientes y direcciones de entrega
                     </p>
                 </div>
-                
-                <Button
-                    onClick={() => handleOpenCustomerForm()}
-                    className="bg-[#F24452] hover:bg-[#d93a48] text-white cursor-pointer"
-                >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Nuevo Cliente
-                </Button>
+                <div className="flex gap-2 shrink-0">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void handleRefresh()}
+                        disabled={isRefreshing}
+                        className="border-[#E5D9D1] text-gray-600 hover:bg-[#F2EDE4]"
+                    >
+                        <RefreshCw
+                            className={`h-4 w-4 mr-1.5 ${isRefreshing ? 'animate-spin' : ''}`}
+                        />
+                        Actualizar
+                    </Button>
+                    <Button
+                        onClick={() => handleOpenCustomerForm()}
+                        className="bg-[#F24452] hover:bg-[#F23D3D] text-white"
+                    >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Nuevo cliente
+                    </Button>
+                </div>
             </div>
 
-            {/* Barra de búsqueda */}
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-[#E5D9D1]">
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-white p-5 rounded-xl shadow-sm border border-[#E5D9D1]">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-500">Total clientes</span>
+                        <div className="p-2 bg-[#F24452]/10 rounded-lg">
+                            <Users className="h-4 w-4 text-[#F24452]" />
+                        </div>
+                    </div>
+                    <p className="text-2xl font-bold text-[#262626] tabular-nums">{stats.total}</p>
+                    <p className="text-xs text-gray-400 mt-1">Registrados en el negocio</p>
+                </div>
+                <div className="bg-white p-5 rounded-xl shadow-sm border border-[#E5D9D1]">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-500">Con dirección</span>
+                        <div className="p-2 bg-[#F2EDE4] rounded-lg">
+                            <MapPin className="h-4 w-4 text-[#262626]" />
+                        </div>
+                    </div>
+                    <p className="text-2xl font-bold text-[#F24452] tabular-nums">
+                        {stats.withAddresses}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">Listos para delivery</p>
+                </div>
+                <div className="bg-white p-5 rounded-xl shadow-sm border border-[#E5D9D1]">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-500">En pantalla</span>
+                        <div className="p-2 bg-[#F2EDE4] rounded-lg">
+                            <Search className="h-4 w-4 text-[#262626]" />
+                        </div>
+                    </div>
+                    <p className="text-2xl font-bold text-[#262626] tabular-nums">{stats.showing}</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                        {searchTerm.trim() ? 'Coinciden con la búsqueda' : 'Sin filtros activos'}
+                    </p>
+                </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 bg-white p-4 rounded-xl shadow-sm border border-[#E5D9D1]">
+                <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
                     <Input
                         type="text"
-                        placeholder="Buscar clientes por nombre o teléfono..."
+                        placeholder="Buscar por nombre o teléfono..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 h-11 focus-visible:ring-0 focus:border-[#F24452]"
+                        className="pl-9 h-10 bg-[#F2EDE4] border-none focus-visible:ring-0 focus:border-[#F24452]"
                     />
                 </div>
             </div>
 
-            {/* Tabla de clientes */}
             <CustomerTable
                 customers={filteredCustomers}
                 isLoading={isLoading}
                 onEdit={handleOpenCustomerForm}
-                onDelete={handleDeleteCustomerClick}
-                onManageAddresses={handleManageAddresses}
+                onDelete={setCustomerToDelete}
+                onManageAddresses={(customer) => {
+                    setSelectedCustomer(customer);
+                    setIsAddressManagerOpen(true);
+                }}
+                onCreateFirst={() => handleOpenCustomerForm()}
+                hasSearch={!!searchTerm.trim()}
             />
 
-            {/* Formulario de cliente */}
             <CustomerForm
                 open={isCustomerFormOpen}
                 onOpenChange={setIsCustomerFormOpen}
@@ -142,22 +172,25 @@ export default function CustomersPage() {
                 editingCustomer={editingCustomer || undefined}
             />
 
-            {/* Gestor de direcciones */}
             <AddressManagerDialog
                 open={isAddressManagerOpen}
                 onOpenChange={setIsAddressManagerOpen}
                 customer={selectedCustomer}
                 businessId={currentBusiness?.id || 0}
-                onAddressesChanged={handleAddressesChanged}
+                onAddressesChanged={loadCustomers}
             />
 
-            {/* Confirmación de eliminación de cliente */}
             <ConfirmDialog
                 open={!!customerToDelete}
                 onOpenChange={(open) => !open && setCustomerToDelete(null)}
-                onConfirm={handleConfirmDeleteCustomer}
-                title="Eliminar Cliente"
-                description="¿Estás seguro de que deseas eliminar este cliente? Los datos históricos se mantendrán para estadísticas."
+                onConfirm={async () => {
+                    if (customerToDelete) {
+                        await deleteCustomer(customerToDelete);
+                        setCustomerToDelete(null);
+                    }
+                }}
+                title="Eliminar cliente"
+                description="¿Estás seguro? Los datos históricos de pedidos se mantienen."
             />
         </div>
     );

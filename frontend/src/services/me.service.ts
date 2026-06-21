@@ -9,6 +9,7 @@ export interface BusinessSummary {
     expiresAt: string | null;
     warningExpirySoon: boolean;
     morosoGraceDaysLeft: number;
+    deliveryFee: number;
 }
 
 export interface MeSession {
@@ -24,6 +25,17 @@ export const MeService = {
 
     async getMyBusinesses(): Promise<BusinessSummary[]> {
         const { data } = await client.get<BusinessSummary[]>('/me/businesses');
+        return data;
+    },
+
+    async updateBusinessSettings(
+        businessId: number,
+        settings: { deliveryFee: number }
+    ): Promise<BusinessSummary> {
+        const { data } = await client.patch<BusinessSummary>(
+            `/me/businesses/${businessId}/settings`,
+            settings
+        );
         return data;
     },
 };

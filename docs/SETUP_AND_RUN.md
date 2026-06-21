@@ -9,16 +9,17 @@
 | Maven | Incluido como `backend/mvnw` / `mvnw.cmd` |
 | PostgreSQL | **16** recomendado; en desarrollo se puede usar Docker (ver abajo) |
 
-## Base de datos con Docker
+## Base de datos con Docker (desarrollo)
 
-En la raíz del repositorio existe `docker-compose.yml` que levanta PostgreSQL:
+En `backend/docker-compose.yml` (no confundir con el `docker-compose.yml` de la **raíz**, que es el stack de producción en VPS):
 
-- Contenedor: `pizzeria-postgres`
+- Contenedor: `pizzeria_db`
 - Puerto: `5432`
 - Base de datos: `pizzeria_db`
-- Usuario / contraseña por defecto: `postgres` / `postgres`
+- Usuario / contraseña: `postgres` / `postgres`
 
 ```bash
+cd backend
 docker compose up -d
 ```
 
@@ -46,7 +47,33 @@ Con perfil distinto de `prod`, se crea un usuario **SuperAdmin** único si no ex
 
 - Por defecto: `superadmin@pizzeria.local` / `superadmin123` (sobrescribible con `SUPERADMIN_EMAIL` / `SUPERADMIN_PASSWORD`).
 - Accede al panel en `/admin` tras el login (misma pantalla que el resto de usuarios).
-- En **producción** no se ejecuta ese loader; el SuperAdmin debe crearse manualmente en base de datos (usuario con `super_admin = true` y contraseña hasheada).
+
+## SuperAdmin (producción)
+
+En **`SPRING_PROFILES_ACTIVE=prod`** no se ejecutan `SuperAdminDataLoader` ni `HardcodedUserDataLoader`. **No hay credenciales SuperAdmin predefinidas en el repo para prod**: el usuario lo creaste manualmente al montar el piloto (SQL, script o copia desde dev).
+
+Para ver qué SuperAdmin existe en el VPS:
+
+```bash
+docker exec -it restogestion-db psql -U postgres -d restogestion \
+  -c "SELECT id, email, super_admin FROM app_users WHERE super_admin = true;"
+```
+
+Si no hay filas, hay que insertar un usuario con `super_admin = true` y contraseña **BCrypt** (mismo algoritmo que Spring Security). Ejemplo de flujo:
+
+1. Generar hash en local (perfil dev): arrancar backend y usar el encoder, o copiar el hash de un usuario dev desde `app_users`.
+2. Insertar en prod (ajustar email y hash):
+
+```sql
+INSERT INTO app_users (first_name, last_name, email, password, super_admin, created_at, updated_at)
+VALUES (
+  'Super', 'Admin', 'tu-email@dominio.com',
+  '$2a$10$...hash_bcrypt...',
+  true, NOW(), NOW()
+);
+```
+
+Las credenciales de dev (`superadmin@pizzeria.local` / `superadmin123`) **solo existen en prod si las insertaste explícitamente**.
 
 ## Variables de entorno (frontend)
 
@@ -116,7 +143,29 @@ set APP_CORS_ORIGINS=https://tu-frontend.com
 cd backend && mvnw.cmd spring-boot:run
 ```
 
-Crear usuarios y negocios en producción mediante scripts SQL, migraciones o un flujo de administración que vuestro despliegue defina.
+Crear usuarios y negocios en producción mediante el panel SuperAdmin (`/admin`) o SQL directo.
+
+## Migraciones de base de datos
+
+Prod usa `ddl-auto: validate`: los cambios de esquema van en `backend/migrations/`. Guía completa: [MIGRATIONS.md](./MIGRATIONS.md).
+
+Desarrollo (contenedor `pizzeria_db`):
+
+```bash
+POSTGRES_CONTAINER=pizzeria_db POSTGRES_DB=pizzeria_db ./scripts/run-migrations.sh
+```
+
+## Despliegue automático (VPS)
+
+Push a `main` dispara [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml):
+
+1. SSH al VPS (`/opt/restogestion`)
+2. `git reset --hard origin/main`
+3. `docker compose build`
+4. Levantar PostgreSQL y ejecutar **`scripts/run-migrations.sh`**
+5. `docker compose up -d` (backend + frontend)
+
+Variables en `.env` en el servidor: `POSTGRES_PASSWORD`, `JWT_SECRET_KEY`, `APP_CORS_ORIGINS`, `VITE_API_BASE_URL`, etc. (ver comentarios en [`docker-compose.yml`](../docker-compose.yml) de la raíz).
 
 ## Compilación y comprobaciones
 
@@ -127,8 +176,9 @@ cd frontend && npm run build
 
 ## Checklist rápido piloto (1 cliente)
 
-- [ ] PostgreSQL con esquema actualizado (misma versión de entidades que el código; `ddl-auto: validate` en prod).
+- [ ] PostgreSQL con esquema actualizado (`./scripts/run-migrations.sh` en el VPS; ver [MIGRATIONS.md](./MIGRATIONS.md)).
 - [ ] `JWT_SECRET_KEY` largo y aleatorio, codificado en Base64 (coherente con `JwtService`).
 - [ ] `APP_CORS_ORIGINS` con el origen HTTPS del frontend.
 - [ ] `VITE_API_BASE_URL` apuntando al API público en build del frontend.
-- [ ] Usuario de negocio creado en BD con `UserBusinessRole` vinculado al `Business` correcto.
+- [ ] Usuario SuperAdmin en `app_users` (`super_admin = true`) para gestionar negocios.
+- [ ] Usuario de negocio con `UserBusinessRole` vinculado al `Business` correcto.

@@ -75,6 +75,18 @@ Requiere JWT con rol `ROLE_SUPER_ADMIN`. Sin `businessId` en query.
 
 ---
 
+## Categorías de menú (`/api/menu-categories`)
+
+| Método | Ruta | Parámetros |
+|--------|------|------------|
+| GET | `/api/menu-categories` | `?businessId=` — lista categorías; crea defaults (Pizzas, Empanadas, Bebidas, Otros) si faltan |
+| POST | `/api/menu-categories` | `?businessId=` + `MenuCategoryRequest` (`name`) |
+| DELETE | `/api/menu-categories/{id}` | `?businessId=` |
+
+Los productos referencian categoría por nombre (`Product.category`); la categoría debe existir en `menu_categories`.
+
+---
+
 ## Clientes (`/api/customers`)
 
 | Método | Ruta | Parámetros |
@@ -109,7 +121,15 @@ Base: `/api/customers/{customerId}/addresses`
 | GET | `/api/orders?businessId=` | Lista pedidos del **turno de caja abierto** |
 | GET | `/api/orders/historic?businessId=` | Histórico sin filtrar por turno actual |
 | PUT | `/api/orders/{id}?businessId=` | Actualiza estado (`UpdateOrderStatusRequest`) |
-| PATCH | `/api/orders/{id}/details?businessId=` | Actualiza detalles (`UpdateOrderDetailsRequest`) |
+| PATCH | `/api/orders/{id}/details?businessId=` | Pago, entrega, cliente, **`items`**, **`payments`** (`UpdateOrderDetailsRequest`) |
+
+**`PATCH .../details`:**
+
+- `items`: reemplazo completo de líneas del pedido (recalcula total). **Rechazado** si `orderStatus` es `DELIVERED`.
+- `payments`: lista de `{ paymentMethod, amount }` para **pago dividido**; reemplaza pagos previos del pedido. Si se envía, debe cubrir el total cuando `paymentStatus` es `PAID`.
+- `deliveryFee`, `customerId`, `addressId`, `manualAddress`, métodos de pago/entrega: según DTO.
+
+Respuesta incluye `payments[]` en `OrderResponse`.
 
 ---
 

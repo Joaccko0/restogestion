@@ -1,5 +1,6 @@
 package com.pizzeria.backend.service;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -10,10 +11,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.pizzeria.backend.dto.me.BusinessSummaryResponse;
+import com.pizzeria.backend.dto.me.UpdateBusinessSettingsRequest;
 import com.pizzeria.backend.model.Business;
 import com.pizzeria.backend.model.User;
 import com.pizzeria.backend.model.UserBusinessRole;
 import com.pizzeria.backend.repository.BusinessRepository;
+
+import jakarta.persistence.EntityNotFoundException;
 
 import lombok.RequiredArgsConstructor;
 
@@ -42,6 +46,31 @@ public class MeService {
         return List.copyOf(out);
     }
 
+    @Transactional
+    public BusinessSummaryResponse updateBusinessSettings(
+            User user,
+            Long businessId,
+            UpdateBusinessSettingsRequest request
+    ) {
+        assertUserHasAccess(user, businessId);
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new EntityNotFoundException("Negocio no encontrado"));
+        business.setDeliveryFee(request.deliveryFee());
+        return toResponse(businessRepository.save(business));
+    }
+
+    private void assertUserHasAccess(User user, Long businessId) {
+        if (user == null || user.getRoles() == null) {
+            throw new EntityNotFoundException("Negocio no encontrado");
+        }
+        boolean allowed = user.getRoles().stream()
+                .map(UserBusinessRole::getBusinessId)
+                .anyMatch(bid -> businessId.equals(bid));
+        if (!allowed) {
+            throw new EntityNotFoundException("Negocio no encontrado");
+        }
+    }
+
     private BusinessSummaryResponse toResponse(Business b) {
         var effective = businessBillingService.effectiveBillingStatus(b);
         boolean warn = businessBillingService.isWarningExpirySoon(b);
@@ -52,7 +81,8 @@ public class MeService {
                 effective,
                 b.getExpiresAt(),
                 warn,
-                morosoLeft
+                morosoLeft,
+                b.getDeliveryFee() != null ? b.getDeliveryFee() : BigDecimal.ZERO
         );
     }
 }

@@ -5,7 +5,7 @@
  */
 
 import { useState } from 'react';
-import { Plus, RefreshCw } from 'lucide-react';
+import { Plus, RefreshCw, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useBusiness } from '../context/BusinessContext';
 import { useOrders } from '../hooks/useOrders';
@@ -13,19 +13,21 @@ import { useProducts } from '../hooks/useProducts';
 import { useCombos } from '../hooks/useCombos';
 import { useCustomers } from '../hooks/useCustomers';
 import { useCashShift } from '../hooks/useCashShift';
+import { useMenuCategories } from '../hooks/useMenuCategories';
 import { KanbanBoard } from '../components/KanbanBoard';
 import { OrderDetailsDialog } from '../components/OrderDetailsDialog';
 import { CreateOrderDialog } from '../components/CreateOrderDialog';
 import { CashShiftStatus } from '../components/CashShiftStatus';
 import { OpenCashDialog } from '../components/OpenCashDialog';
 import { CloseCashDialog } from '../components/CloseCashDialog';
+import { DeliveryFeeDialog } from '../components/DeliveryFeeDialog';
 import type { OrderResponse, OrderStatus } from '../types/order.types';
 
 /**
  * Página principal: Tablero Kanban de Pedidos
  */
 export default function OrdersPage() {
-    const { currentBusiness } = useBusiness();
+    const { currentBusiness, refreshBusiness } = useBusiness();
     const {
         orders,
         loading,
@@ -42,12 +44,14 @@ export default function OrdersPage() {
 
     // Gestión de CashShift
     const { openCashShift, loading: cashLoading, openCash, closeCash } = useCashShift();
+    const { categories: menuCategories } = useMenuCategories(currentBusiness?.id || null);
     const [showOpenCashDialog, setShowOpenCashDialog] = useState(false);
     const [showCloseCashDialog, setShowCloseCashDialog] = useState(false);
 
     const [selectedOrder, setSelectedOrder] = useState<OrderResponse | null>(null);
     const [showDetails, setShowDetails] = useState(false);
     const [showCreateDialog, setShowCreateDialog] = useState(false);
+    const [showDeliveryFeeDialog, setShowDeliveryFeeDialog] = useState(false);
 
     const handleOrderClick = (order: OrderResponse) => {
         setSelectedOrder(order);
@@ -56,6 +60,24 @@ export default function OrdersPage() {
 
     const handleStatusChange = async (orderId: number, newStatus: OrderStatus) => {
         await updateOrderStatus(orderId, newStatus);
+    };
+
+    const handleMarkPaid = async (orderId: number) => {
+        const updated = await updateOrderDetails(orderId, { paymentStatus: 'PAID' });
+        if (updated && selectedOrder?.id === orderId) {
+            setSelectedOrder(updated);
+        }
+    };
+
+    const handleUpdateDetails = async (
+        orderId: number,
+        details: Parameters<typeof updateOrderDetails>[1]
+    ) => {
+        const updated = await updateOrderDetails(orderId, details);
+        if (updated && selectedOrder?.id === orderId) {
+            setSelectedOrder(updated);
+        }
+        return updated;
     };
 
     const handleCancelOrder = async (orderId: number) => {
@@ -85,7 +107,16 @@ export default function OrdersPage() {
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-wrap">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowDeliveryFeeDialog(true)}
+                            className="border-[#E5D9D1] text-gray-600"
+                        >
+                            <Truck className="w-4 h-4 mr-1.5" />
+                            Delivery ${currentBusiness?.deliveryFee ?? 0}
+                        </Button>
                         <Button
                             variant="outline"
                             size="sm"
@@ -115,32 +146,6 @@ export default function OrdersPage() {
                     onCloseClick={() => setShowCloseCashDialog(true)}
                     loading={cashLoading}
                 />
-                {/* Estadísticas rápidas (solo mostrar si hay caja abierta) */}
-                {openCashShift && (
-                    <div className="grid grid-cols-4 gap-4">
-                        <StatCard
-                            title="Pendientes"
-                            count={orders.filter(o => o.orderStatus === 'PENDING').length}
-                            color="bg-amber-500"
-                        />
-                        <StatCard
-                            title="En Preparación"
-                            count={orders.filter(o => o.orderStatus === 'PREPARING').length}
-                            color="bg-blue-500"
-                        />
-                        <StatCard
-                            title="Listos"
-                            count={orders.filter(o => o.orderStatus === 'READY').length}
-                            color="bg-green-500"
-                        />
-                        <StatCard
-                            title="Entregados"
-                            count={orders.filter(o => o.orderStatus === 'DELIVERED').length}
-                            color="bg-gray-500"
-                        />
-                    </div>
-                )}
-
                 {/* Tablero Kanban */}
                 {openCashShift ? (
                     loading && orders.length === 0 ? (
@@ -155,6 +160,7 @@ export default function OrdersPage() {
                             orders={orders}
                             onOrderClick={handleOrderClick}
                             onStatusChange={handleStatusChange}
+                            onMarkPaid={handleMarkPaid}
                         />
                     )
                 ) : null}
@@ -165,8 +171,13 @@ export default function OrdersPage() {
                 order={selectedOrder}
                 open={showDetails}
                 onOpenChange={setShowDetails}
+                businessId={currentBusiness?.id || 0}
+                customers={customers}
+                products={products}
+                combos={combos}
+                onCustomersChanged={loadCustomers}
                 onCancel={handleCancelOrder}
-                onUpdateDetails={updateOrderDetails}
+                onUpdateDetails={handleUpdateDetails}
             />
 
             <CreateOrderDialog
@@ -178,6 +189,15 @@ export default function OrdersPage() {
                 customers={customers}
                 businessId={currentBusiness?.id || 0}
                 onCustomersChanged={loadCustomers}
+                deliveryFee={currentBusiness?.deliveryFee ?? 0}
+            />
+
+            <DeliveryFeeDialog
+                open={showDeliveryFeeDialog}
+                onOpenChange={setShowDeliveryFeeDialog}
+                businessId={currentBusiness?.id ?? 0}
+                currentFee={currentBusiness?.deliveryFee ?? 0}
+                onSaved={() => void refreshBusiness()}
             />
 
             <OpenCashDialog
@@ -193,26 +213,10 @@ export default function OrdersPage() {
                 onSubmit={closeCash}
                 cashShift={openCashShift}
                 orders={orders}
+                menuCategories={menuCategories}
                 onClosed={loadOrders}
                 loading={cashLoading}
             />
-        </div>
-    );
-}
-
-/**
- * Tarjeta de estadística
- */
-function StatCard({ title, count, color }: { title: string; count: number; color: string }) {
-    return (
-        <div className="bg-white p-4 rounded-lg border-2 border-[#E5D9D1] shadow-sm">
-            <div className="flex items-center gap-3">
-                <div className={`w-2 h-12 rounded-full ${color}`} />
-                <div>
-                    <div className="text-2xl font-bold text-[#0D0D0D]">{count}</div>
-                    <div className="text-xs text-gray-600">{title}</div>
-                </div>
-            </div>
         </div>
     );
 }

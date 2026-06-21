@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,6 +40,15 @@ public class ComboController {
     @GetMapping
     public ResponseEntity<List<ComboResponse>> getAll(@RequestParam Long businessId) {
         return ResponseEntity.ok(comboService.getAllCombos(businessId));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ComboResponse> update(
+            @PathVariable Long id,
+            @RequestParam Long businessId,
+            @RequestBody @Valid ComboRequest request
+    ) {
+        return ResponseEntity.ok(comboService.updateCombo(businessId, id, request));
     }
 
     @DeleteMapping("/{id}")

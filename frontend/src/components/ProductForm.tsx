@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,25 +12,28 @@ interface ProductFormProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSubmit: (product: ProductRequest) => Promise<boolean>;
-    editingProduct?: Product; // Si se proporciona, es modo edición
+    editingProduct?: Product;
+    categories: { code: string; name: string }[];
 }
 
 // Formulario inicial vacío
-const emptyForm: ProductRequest = {
+const emptyForm = (): ProductRequest => ({
     title: '',
     description: '',
     price: 0,
-    category: 'PIZZAS',
-    active: true
-};
+    category: '',
+    active: true,
+});
 
 /**
  * Formulario modal para crear/editar productos
  * Soporta ambos modos: crear nuevo y editar existente
  */
-export function ProductForm({ open, onOpenChange, onSubmit, editingProduct }: ProductFormProps) {
-    const [formData, setFormData] = useState<ProductRequest>(emptyForm);
+export function ProductForm({ open, onOpenChange, onSubmit, editingProduct, categories }: ProductFormProps) {
+    const [formData, setFormData] = useState<ProductRequest>(emptyForm());
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const defaultCategory = categories[0]?.code ?? '';
 
     // Inicializar forma cuando se abre con un producto para editar
     useEffect(() => {
@@ -39,12 +43,12 @@ export function ProductForm({ open, onOpenChange, onSubmit, editingProduct }: Pr
                 description: editingProduct.description,
                 price: editingProduct.price,
                 category: editingProduct.category,
-                active: editingProduct.active
+                active: editingProduct.active,
             });
         } else if (open) {
-            setFormData(emptyForm);
+            setFormData({ ...emptyForm(), category: defaultCategory });
         }
-    }, [open, editingProduct]);
+    }, [open, editingProduct, defaultCategory]);
 
     // Actualizar campo del formulario
     const handleChange = (field: keyof ProductRequest, value: string | number | boolean) => {
@@ -53,8 +57,12 @@ export function ProductForm({ open, onOpenChange, onSubmit, editingProduct }: Pr
 
     // Enviar formulario
     const handleSubmit = async () => {
-        // Validación básica
         if (!formData.title.trim()) {
+            toast.error('El nombre es obligatorio');
+            return;
+        }
+        if (!formData.category?.trim()) {
+            toast.error('Seleccioná una categoría');
             return;
         }
 
@@ -63,14 +71,17 @@ export function ProductForm({ open, onOpenChange, onSubmit, editingProduct }: Pr
         setIsSubmitting(false);
 
         if (success) {
-            // Resetear y cerrar
-            setFormData(emptyForm);
+            setFormData({ ...emptyForm(), category: defaultCategory });
             onOpenChange(false);
         }
     };
 
     const isEditMode = !!editingProduct;
     const title = isEditMode ? 'Editar Producto' : 'Crear Nuevo Producto';
+    const canSubmit =
+        !!formData.title.trim() &&
+        !!formData.category?.trim() &&
+        categories.length > 0;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -110,21 +121,30 @@ export function ProductForm({ open, onOpenChange, onSubmit, editingProduct }: Pr
                         </div>
 
                         <div className="grid gap-1.5">
-                            <Label htmlFor="category" className="text-sm">Categoría</Label>
+                            <Label htmlFor="category" className="text-sm">
+                                Categoría <span className="text-[#F24452]">*</span>
+                            </Label>
                             <Select
-                                value={formData.category}
+                                value={formData.category || undefined}
                                 onValueChange={(val) => handleChange('category', val)}
+                                disabled={categories.length === 0}
                             >
                                 <SelectTrigger className="h-10 bg-[#F2EDE4] border-[#E5D9D1] focus:border-[#F24452] focus:ring-0 overflow-hidden text-ellipsis whitespace-nowrap">
-                                    <SelectValue />
+                                    <SelectValue placeholder="Seleccionar categoría" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-[#F2EDE4] border border-[#E5D9D1] shadow-lg max-h-[260px]">
-                                    <SelectItem value="PIZZAS">Pizzas</SelectItem>
-                                    <SelectItem value="EMPANADAS">Empanadas</SelectItem>
-                                    <SelectItem value="BEBIDAS">Bebidas</SelectItem>
-                                    <SelectItem value="POSTRES">Postres</SelectItem>
+                                    {categories.map((cat) => (
+                                        <SelectItem key={cat.code} value={cat.code}>
+                                            {cat.name}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
+                            {categories.length === 0 && (
+                                <p className="text-xs text-gray-500">
+                                    Creá al menos una categoría en la pestaña Categorías.
+                                </p>
+                            )}
                         </div>
                     </div>
 
@@ -153,7 +173,7 @@ export function ProductForm({ open, onOpenChange, onSubmit, editingProduct }: Pr
                     <Button
                         onClick={handleSubmit}
                         className="bg-[#F24452] hover:bg-[#F23D3D] text-white"
-                        disabled={isSubmitting || !formData.title.trim()}
+                        disabled={isSubmitting || !canSubmit}
                     >
                         {isSubmitting ? 'Guardando...' : isEditMode ? 'Actualizar' : 'Guardar'}
                     </Button>

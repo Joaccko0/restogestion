@@ -10,11 +10,18 @@ Monorepo con **backend Spring Boot** (`backend/`) y **frontend React + Vite + Ty
 | Integración frontend ↔ API | [API_REFERENCE.md](./API_REFERENCE.md), [FRONTEND.md](./FRONTEND.md) |
 | Modelo de datos y reglas | [DOMAIN_MODEL.md](./DOMAIN_MODEL.md) |
 | Seguridad y multi-tenant | [AUTH_AND_MULTITENANCY.md](./AUTH_AND_MULTITENANCY.md) |
+| Migraciones PostgreSQL / deploy | [MIGRATIONS.md](./MIGRATIONS.md) |
 | Contexto breve para asistentes / IA | [ai-context.md](./ai-context.md) |
 
 ## Despliegue piloto (1 cliente)
 
-Checklist y variables: sección **Perfil `prod`** y **Checklist rápido piloto** en [SETUP_AND_RUN.md](./SETUP_AND_RUN.md). Incluye CORS, JWT, `VITE_API_BASE_URL`, y desactivación del usuario demo en producción.
+Checklist y variables: sección **Perfil `prod`**, **Despliegue automático** y **Checklist rápido piloto** en [SETUP_AND_RUN.md](./SETUP_AND_RUN.md). Incluye CORS, JWT, `VITE_API_BASE_URL`, migraciones SQL y desactivación de usuarios demo en producción.
+
+## Migraciones y esquema
+
+- Scripts versionados: `backend/migrations/`
+- Documentación: [MIGRATIONS.md](./MIGRATIONS.md)
+- En prod el deploy a `main` ejecuta `scripts/run-migrations.sh` antes de levantar el backend.
 
 ## SuperAdmin y facturación
 

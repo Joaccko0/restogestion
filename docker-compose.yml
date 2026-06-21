@@ -113,4 +113,5 @@ volumes:
 #   docker compose build --no-cache
 #   docker compose up -d
 #
-# Nota: perfil prod usa ddl-auto: validate; el esquema debe existir (migraciones o primer arranque con cuidado).
+# Nota: perfil prod usa ddl-auto: validate; el esquema se actualiza con backend/migrations/
+# y scripts/run-migrations.sh (automático en deploy a main). Ver docs/MIGRATIONS.md.

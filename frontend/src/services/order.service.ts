@@ -4,7 +4,7 @@
  */
 
 import apiClient from '../api/client';
-import type { OrderResponse, CreateOrderRequest, OrderStatus } from '../types/order.types';
+import type { OrderResponse, CreateOrderRequest, OrderStatus, OrderItemRequest, OrderPaymentRequest } from '../types/order.types';
 
 export const OrderService = {
     /**
@@ -60,7 +60,17 @@ export const OrderService = {
     async updateOrderDetails(
         businessId: number,
         orderId: number,
-        details: { paymentStatus?: string; paymentMethod?: string; deliveryMethod?: string }
+        details: {
+            paymentStatus?: string;
+            paymentMethod?: string;
+            deliveryMethod?: string;
+            customerId?: number;
+            addressId?: number;
+            manualAddress?: string;
+            deliveryFee?: number;
+            items?: OrderItemRequest[];
+            payments?: OrderPaymentRequest[];
+        }
     ): Promise<OrderResponse> {
         const response = await apiClient.patch<OrderResponse>(
             `/orders/${orderId}/details`,

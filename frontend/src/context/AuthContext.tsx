@@ -22,11 +22,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const register = async (data: RegisterRequest) => {
         try {
             const response = await client.post<AuthResponse>('/auth/register', data);
-            setToken(response.data.token);
-            // localStorage se sincroniza automáticamente en useEffect
+            const newToken = response.data.token;
+            localStorage.setItem('jwt_token', newToken);
+            setToken(newToken);
         } catch (error) {
             console.error("Error en registro:", error);
-            throw error; // Lanza error hacia la UI para mostrar mensaje
+            throw error;
         }
     };
 
@@ -44,10 +45,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const login = async (credentials: LoginRequest) => {
         try {
             const response = await client.post<AuthResponse>('/auth/login', credentials);
-            setToken(response.data.token); // Activa el interceptor de request automáticamente
+            const newToken = response.data.token;
+            // Sincronizar de inmediato: el interceptor de Axios lee localStorage, no el state de React
+            localStorage.setItem('jwt_token', newToken);
+            setToken(newToken);
         } catch (error) {
             console.error("Error en login:", error);
-            throw error; // La página de login captura esto y muestra error
+            throw error;
         }
     };
 

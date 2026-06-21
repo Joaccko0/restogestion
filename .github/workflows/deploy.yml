@@ -12,6 +12,8 @@
 #
 # El servidor se alinea con GitHub con `git reset --hard` (sin merge). Los cambios locales
 # en archivos rastreados (p. ej. docker-compose.yml editado a mano) se pierden; .env sin trackear no.
+#
+# Migraciones: tras levantar PostgreSQL se ejecuta scripts/run-migrations.sh (backend/migrations/).
 
 name: Deploy Restogestion to VPS
 
@@ -102,16 +104,39 @@ jobs:
             }
 
             echo "=========================================="
-            echo " 4/5  Build, bajar stack anterior e iniciar contenedores"
+            echo " 4/6  Build e iniciar PostgreSQL"
             echo "=========================================="
             compose version || true
             compose build --pull
-            # Evita conflictos de nombre al recrear (contenedores viejos u otro prefijo de proyecto)
-            compose down --remove-orphans
+            compose up -d db
+
+            echo "Esperando healthcheck de PostgreSQL..."
+            for i in $(seq 1 30); do
+              if compose ps db 2>/dev/null | grep -qE '(healthy|Up \(healthy\))'; then
+                echo "PostgreSQL listo."
+                break
+              fi
+              if [ "$i" -eq 30 ]; then
+                echo "ERROR: PostgreSQL no pasó el healthcheck a tiempo"
+                compose ps -a
+                exit 1
+              fi
+              sleep 2
+            done
+
+            echo "=========================================="
+            echo " 5/6  Migraciones SQL (backend/migrations/)"
+            echo "=========================================="
+            chmod +x scripts/run-migrations.sh
+            ./scripts/run-migrations.sh
+
+            echo "=========================================="
+            echo " 6/6  Levantar stack completo y limpieza"
+            echo "=========================================="
             compose up -d --remove-orphans
 
             echo "=========================================="
-            echo " 5/5  Limpieza y estado"
+            echo "  Estado final"
             echo "=========================================="
             "${DOCKER[@]}" image prune -f
             compose ps -a

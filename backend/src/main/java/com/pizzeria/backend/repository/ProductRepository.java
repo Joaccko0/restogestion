@@ -17,4 +17,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     // SQL generado: SELECT * FROM products WHERE business_id = ? AND active = true
     List<Product> findByBusinessIdAndActiveTrue(Long businessId);
+
+    long countByBusinessIdAndCategory(Long businessId, String category);
 }

@@ -83,6 +83,14 @@ public class CashShift {
     @Column(name = "end_amount", precision = 10, scale = 2)
     private BigDecimal endAmount;
 
+    /** Total recaudado reportado manualmente al cerrar (opcional). */
+    @Column(name = "manual_total_collected", precision = 10, scale = 2)
+    private BigDecimal manualTotalCollected;
+
+    /** JSON: [{ "category": "PIZZAS", "amount": 1000.00 }, ...] */
+    @Column(name = "manual_category_sales", columnDefinition = "TEXT")
+    private String manualCategorySales;
+
     /**
      * Auditoría: fecha de creación
      */

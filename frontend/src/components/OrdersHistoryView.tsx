@@ -1,15 +1,8 @@
 /**
  * Vista de Historial de Pedidos con filtros
- * Permite filtrar por fecha, estado, método de pago, etc.
  */
 
-import { useState, useMemo } from 'react';
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle
-} from '@/components/ui/card';
+import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,14 +23,26 @@ import {
 } from '@/components/ui/table';
 import { formatCurrency } from '../lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, FilterX, Wallet } from 'lucide-react';
+import {
+    Calendar,
+    FilterX,
+    Wallet,
+    History,
+    DollarSign,
+    CheckCircle2,
+    Loader2,
+    Filter,
+    ChevronDown,
+    ChevronUp,
+    Search,
+} from 'lucide-react';
 import type { OrderResponse, OrderStatus, PaymentStatus, PaymentMethod } from '../types/order.types';
 import type { CashShiftResponse } from '../types/cashshift.types';
 import {
     OrderStatusLabels,
     OrderStatusColors,
     PaymentStatusLabels,
-    PaymentMethodLabels
+    PaymentMethodLabels,
 } from '../types/order.types';
 
 interface OrdersHistoryViewProps {
@@ -48,6 +53,7 @@ interface OrdersHistoryViewProps {
 
 export function OrdersHistoryView({ orders, loading = false, cashShifts = [] }: OrdersHistoryViewProps) {
     const ALL = 'ALL';
+    const [filtersOpen, setFiltersOpen] = useState(true);
     const [filterDateFrom, setFilterDateFrom] = useState<string>('');
     const [filterDateTo, setFilterDateTo] = useState<string>('');
     const [filterOrderStatus, setFilterOrderStatus] = useState<OrderStatus | typeof ALL>(ALL);
@@ -56,58 +62,38 @@ export function OrdersHistoryView({ orders, loading = false, cashShifts = [] }: 
     const [filterCustomer, setFilterCustomer] = useState<string>('');
     const [filterCashShift, setFilterCashShift] = useState<number | typeof ALL>(ALL);
 
-    // Aplicar filtros
     const filteredOrders = useMemo(() => {
         return orders.filter((order) => {
-            // Obtener la caja a la que pertenece este pedido
-            const orderCashShift = cashShifts.find(cs => cs.id === order.cashShiftId);
-            
-            // Filtro de fecha desde (basado en la fecha de apertura de la caja)
+            const orderCashShift = cashShifts.find((cs) => cs.id === order.cashShiftId);
+
             if (filterDateFrom && orderCashShift) {
                 const fromDate = new Date(filterDateFrom);
-                fromDate.setHours(0, 0, 0, 0); // Ignorar horas
-                
+                fromDate.setHours(0, 0, 0, 0);
                 const cashShiftDate = new Date(orderCashShift.startDate);
-                cashShiftDate.setHours(0, 0, 0, 0); // Ignorar horas
-                
+                cashShiftDate.setHours(0, 0, 0, 0);
                 if (cashShiftDate < fromDate) return false;
             }
 
-            // Filtro de fecha hasta (basado en la fecha de apertura de la caja)
             if (filterDateTo && orderCashShift) {
                 const toDate = new Date(filterDateTo);
-                toDate.setHours(23, 59, 59, 999); // Fin del día
-                
+                toDate.setHours(23, 59, 59, 999);
                 const cashShiftDate = new Date(orderCashShift.startDate);
-                cashShiftDate.setHours(0, 0, 0, 0); // Ignorar horas
-                
+                cashShiftDate.setHours(0, 0, 0, 0);
                 if (cashShiftDate > toDate) return false;
             }
 
-            // Filtro de estado del pedido
-            if (filterOrderStatus !== ALL && order.orderStatus !== filterOrderStatus) {
+            if (filterOrderStatus !== ALL && order.orderStatus !== filterOrderStatus) return false;
+            if (filterPaymentStatus !== ALL && order.paymentStatus !== filterPaymentStatus) return false;
+            if (filterPaymentMethod !== ALL && order.paymentMethod !== filterPaymentMethod) return false;
+
+            if (
+                filterCustomer &&
+                !order.customerName?.toLowerCase().includes(filterCustomer.toLowerCase())
+            ) {
                 return false;
             }
 
-            // Filtro de estado de pago
-            if (filterPaymentStatus !== ALL && order.paymentStatus !== filterPaymentStatus) {
-                return false;
-            }
-
-            // Filtro de método de pago
-            if (filterPaymentMethod !== ALL && order.paymentMethod !== filterPaymentMethod) {
-                return false;
-            }
-
-            // Filtro de cliente (por nombre)
-            if (filterCustomer && !order.customerName?.toLowerCase().includes(filterCustomer.toLowerCase())) {
-                return false;
-            }
-
-            // Filtro de caja
-            if (filterCashShift !== ALL && order.cashShiftId !== filterCashShift) {
-                return false;
-            }
+            if (filterCashShift !== ALL && order.cashShiftId !== filterCashShift) return false;
 
             return true;
         });
@@ -120,8 +106,29 @@ export function OrdersHistoryView({ orders, loading = false, cashShifts = [] }: 
         filterPaymentStatus,
         filterPaymentMethod,
         filterCustomer,
-        filterCashShift
+        filterCashShift,
     ]);
+
+    const stats = useMemo(() => {
+        const paid = filteredOrders.filter(
+            (o) => o.paymentStatus === 'PAID' && o.orderStatus !== 'CANCELLED'
+        );
+        const totalRevenue = paid.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+        return {
+            count: filteredOrders.length,
+            paidCount: paid.length,
+            totalRevenue,
+        };
+    }, [filteredOrders]);
+
+    const hasActiveFilters =
+        filterDateFrom ||
+        filterDateTo ||
+        filterOrderStatus !== ALL ||
+        filterPaymentStatus !== ALL ||
+        filterPaymentMethod !== ALL ||
+        filterCustomer ||
+        filterCashShift !== ALL;
 
     const handleClearFilters = () => {
         setFilterDateFrom('');
@@ -133,271 +140,367 @@ export function OrdersHistoryView({ orders, loading = false, cashShifts = [] }: 
         setFilterCashShift(ALL);
     };
 
-    const hasActiveFilters = filterDateFrom || filterDateTo || filterOrderStatus !== ALL || filterPaymentStatus !== ALL || filterPaymentMethod !== ALL || filterCustomer || filterCashShift !== ALL;
-
     return (
-        <div className="space-y-6">
-            <div>
-                <p className="text-gray-600 mt-1">Total: {filteredOrders.length} pedidos encontrados</p>
+        <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-white p-5 rounded-xl shadow-sm border border-[#E5D9D1]">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-500">Pedidos</span>
+                        <div className="p-2 bg-[#F24452]/10 rounded-lg">
+                            <History className="h-4 w-4 text-[#F24452]" />
+                        </div>
+                    </div>
+                    <p className="text-2xl font-bold text-[#262626] tabular-nums">{stats.count}</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                        {hasActiveFilters ? 'Con filtros aplicados' : 'Total en historial'}
+                    </p>
+                </div>
+                <div className="bg-white p-5 rounded-xl shadow-sm border border-[#E5D9D1]">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-500">Facturación</span>
+                        <div className="p-2 bg-[#F2EDE4] rounded-lg">
+                            <DollarSign className="h-4 w-4 text-[#262626]" />
+                        </div>
+                    </div>
+                    <p className="text-2xl font-bold text-[#F24452] tabular-nums">
+                        {formatCurrency(stats.totalRevenue)}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">Pedidos pagados (filtrados)</p>
+                </div>
+                <div className="bg-white p-5 rounded-xl shadow-sm border border-[#E5D9D1]">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-500">Cobrados</span>
+                        <div className="p-2 bg-[#F2EDE4] rounded-lg">
+                            <CheckCircle2 className="h-4 w-4 text-[#262626]" />
+                        </div>
+                    </div>
+                    <p className="text-2xl font-bold text-[#262626] tabular-nums">{stats.paidCount}</p>
+                    <p className="text-xs text-gray-400 mt-1">De {stats.count} pedidos visibles</p>
+                </div>
             </div>
 
-            <Card className="bg-white">
-                <CardHeader>
-                    <CardTitle className="text-lg">Filtros</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="filterDateFrom">Desde</Label>
-                            <div className="relative">
-                                <Calendar className="absolute left-3 top-3 w-4 h-4 text-gray-400 pointer-events-none" />
-                                <Input
-                                    id="filterDateFrom"
-                                    type="date"
-                                    value={filterDateFrom}
-                                    onChange={(e) => setFilterDateFrom(e.target.value)}
-                                    className="pl-10 bg-[#F2EDE4]"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="filterDateTo">Hasta</Label>
-                            <div className="relative">
-                                <Calendar className="absolute left-3 top-3 w-4 h-4 text-gray-400 pointer-events-none" />
-                                <Input
-                                    id="filterDateTo"
-                                    type="date"
-                                    value={filterDateTo}
-                                    onChange={(e) => setFilterDateTo(e.target.value)}
-                                    className="pl-10 bg-[#F2EDE4]"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="filterCustomer">Cliente</Label>
-                            <Input
-                                id="filterCustomer"
-                                type="text"
-                                placeholder="Nombre del cliente"
-                                value={filterCustomer}
-                                onChange={(e) => setFilterCustomer(e.target.value)}
-                                className="bg-[#F2EDE4]"
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="filterCashShift">Caja</Label>
-                            <Select value={filterCashShift === ALL ? ALL : String(filterCashShift)} onValueChange={(value) => setFilterCashShift(value === ALL ? ALL : Number(value))}>
-                                <SelectTrigger className="h-10 bg-[#F2EDE4] border-[#E5D9D1] focus:border-[#F24452] focus:ring-0 overflow-hidden text-ellipsis whitespace-nowrap">
-                                    <SelectValue placeholder="Todas" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-[#F2EDE4] border border-[#E5D9D1] shadow-lg max-h-[260px]">
-                                    <SelectItem value={ALL}>Todas las cajas</SelectItem>
-                                    {cashShifts.map((cs) => {
-                                        const openDate = new Date(cs.startDate).toLocaleDateString('es-ES', {
-                                            day: '2-digit',
-                                            month: '2-digit',
-                                            year: 'numeric'
-                                        });
-                                        const closeDate = cs.endDate
-                                            ? new Date(cs.endDate).toLocaleDateString('es-ES', {
-                                                day: '2-digit',
-                                                month: '2-digit',
-                                                year: 'numeric'
-                                            })
-                                            : 'Abierta';
-                                        return (
-                                            <SelectItem key={cs.id} value={String(cs.id)}>
-                                                #{cs.id} - {openDate} {cs.endDate ? `- ${closeDate}` : '(🔓 Abierta)'}
-                                            </SelectItem>
-                                        );
-                                    })}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="filterOrderStatus">Estado del Pedido</Label>
-                            <Select value={filterOrderStatus} onValueChange={(value) => setFilterOrderStatus(value as OrderStatus | typeof ALL)}>
-                                <SelectTrigger className="h-10 bg-[#F2EDE4] border-[#E5D9D1] focus:border-[#F24452] focus:ring-0 overflow-hidden text-ellipsis whitespace-nowrap">
-                                    <SelectValue placeholder="Todos" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-[#F2EDE4] border border-[#E5D9D1] shadow-lg max-h-[260px]">
-                                    <SelectItem value={ALL}>Todos</SelectItem>
-                                    <SelectItem value="PENDING">Pendiente</SelectItem>
-                                    <SelectItem value="PREPARING">En Preparación</SelectItem>
-                                    <SelectItem value="READY">Listo</SelectItem>
-                                    <SelectItem value="DELIVERED">Entregado</SelectItem>
-                                    <SelectItem value="CANCELLED">Cancelado</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="filterPaymentStatus">Estado de Pago</Label>
-                            <Select value={filterPaymentStatus} onValueChange={(value) => setFilterPaymentStatus(value as PaymentStatus | typeof ALL)}>
-                                <SelectTrigger className="h-10 bg-[#F2EDE4] border-[#E5D9D1] focus:border-[#F24452] focus:ring-0 overflow-hidden text-ellipsis whitespace-nowrap">
-                                    <SelectValue placeholder="Todos" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-[#F2EDE4] border border-[#E5D9D1] shadow-lg max-h-[260px]">
-                                    <SelectItem value={ALL}>Todos</SelectItem>
-                                    <SelectItem value="PENDING">Pendiente</SelectItem>
-                                    <SelectItem value="PAID">Pagado</SelectItem>
-                                    <SelectItem value="CANCELLED">Cancelado</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="filterPaymentMethod">Método de Pago</Label>
-                            <Select value={filterPaymentMethod} onValueChange={(value) => setFilterPaymentMethod(value as PaymentMethod | typeof ALL)}>
-                                <SelectTrigger className="h-10 bg-[#F2EDE4] border-[#E5D9D1] focus:border-[#F24452] focus:ring-0 overflow-hidden text-ellipsis whitespace-nowrap">
-                                    <SelectValue placeholder="Todos" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-[#F2EDE4] border border-[#E5D9D1] shadow-lg max-h-[260px]">
-                                    <SelectItem value={ALL}>Todos</SelectItem>
-                                    <SelectItem value="CASH">💵 Efectivo</SelectItem>
-                                    <SelectItem value="CARD">💳 Tarjeta</SelectItem>
-                                    <SelectItem value="TRANSFER">🏦 Transferencia</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="flex items-end">
-                            {hasActiveFilters && (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleClearFilters}
-                                    className="w-full border-gray-300 hover:bg-gray-50"
-                                >
-                                    <FilterX className="w-4 h-4 mr-2" />
-                                    Limpiar Filtros
-                                </Button>
-                            )}
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <Card className="bg-white">
-                <CardContent className="p-0">
-                    {loading ? (
-                        <div className="flex justify-center items-center h-40">
-                            <p className="text-gray-500">Cargando pedidos...</p>
-                        </div>
-                    ) : filteredOrders.length === 0 ? (
-                        <div className="flex justify-center items-center h-40">
-                            <p className="text-gray-500">
-                                {orders.length === 0
-                                    ? 'No hay pedidos registrados'
-                                    : 'No hay pedidos que coincidan con los filtros'}
-                            </p>
-                        </div>
+            <div className="bg-white rounded-xl shadow-sm border border-[#E5D9D1] overflow-hidden">
+                <button
+                    type="button"
+                    onClick={() => setFiltersOpen((v) => !v)}
+                    className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#FFF9F5] transition-colors"
+                >
+                    <span className="flex items-center gap-2 text-sm font-semibold text-[#262626]">
+                        <Filter className="h-4 w-4 text-[#F24452]" />
+                        Filtros
+                        {hasActiveFilters && (
+                            <span className="text-xs font-normal px-2 py-0.5 rounded-full bg-[#F24452]/10 text-[#F24452]">
+                                Activos
+                            </span>
+                        )}
+                    </span>
+                    {filtersOpen ? (
+                        <ChevronUp className="h-4 w-4 text-gray-400" />
                     ) : (
-                        <div className="overflow-x-auto">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow className="border-b border-gray-200 bg-gray-50">
-                                        <TableHead className="font-semibold text-gray-700">ID</TableHead>
-                                        <TableHead className="font-semibold text-gray-700">Caja</TableHead>
-                                        <TableHead className="font-semibold text-gray-700">Fecha</TableHead>
-                                        <TableHead className="font-semibold text-gray-700">Cliente</TableHead>
-                                        <TableHead className="font-semibold text-gray-700">Estado</TableHead>
-                                        <TableHead className="font-semibold text-gray-700">Pago</TableHead>
-                                        <TableHead className="font-semibold text-gray-700">Método</TableHead>
-                                        <TableHead className="text-right font-semibold text-gray-700">Total</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {filteredOrders.map((order) => {
-                                        // Buscar la caja del pedido para mostrar su fecha de apertura
-                                        const orderCashShift = cashShifts.find(cs => cs.id === order.cashShiftId);
-                                        
-                                        // Fecha del pedido (hora específica)
-                                        const orderDate = new Date(order.createdAt);
-                                        const orderTimeDisplay = !Number.isNaN(orderDate.getTime())
-                                            ? orderDate.toLocaleTimeString('es-ES', {
-                                                hour: '2-digit',
-                                                minute: '2-digit'
-                                            })
-                                            : '';
-                                        
-                                        // Fecha de la caja (día completo)
-                                        const cashShiftDate = orderCashShift ? new Date(orderCashShift.startDate) : null;
-                                        const dateDisplay = cashShiftDate && !Number.isNaN(cashShiftDate.getTime())
-                                            ? cashShiftDate.toLocaleDateString('es-ES', {
-                                                year: 'numeric',
-                                                month: 'short',
-                                                day: 'numeric'
-                                            })
-                                            : orderDate.toLocaleDateString('es-ES', {
-                                                year: 'numeric',
-                                                month: 'short',
-                                                day: 'numeric'
-                                            });
-                                        
-                                        const totalValue = typeof order.total === 'number'
+                        <ChevronDown className="h-4 w-4 text-gray-400" />
+                    )}
+                </button>
+
+                {filtersOpen && (
+                    <div className="px-4 pb-4 space-y-4 border-t border-[#F2EDE4]">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="filterDateFrom" className="text-xs text-gray-500">
+                                    Desde
+                                </Label>
+                                <div className="relative">
+                                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                    <Input
+                                        id="filterDateFrom"
+                                        type="date"
+                                        value={filterDateFrom}
+                                        onChange={(e) => setFilterDateFrom(e.target.value)}
+                                        className="pl-10 h-10 bg-[#F2EDE4] border-none"
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="filterDateTo" className="text-xs text-gray-500">
+                                    Hasta
+                                </Label>
+                                <div className="relative">
+                                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                    <Input
+                                        id="filterDateTo"
+                                        type="date"
+                                        value={filterDateTo}
+                                        onChange={(e) => setFilterDateTo(e.target.value)}
+                                        className="pl-10 h-10 bg-[#F2EDE4] border-none"
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="filterCustomer" className="text-xs text-gray-500">
+                                    Cliente
+                                </Label>
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <Input
+                                        id="filterCustomer"
+                                        placeholder="Nombre..."
+                                        value={filterCustomer}
+                                        onChange={(e) => setFilterCustomer(e.target.value)}
+                                        className="pl-10 h-10 bg-[#F2EDE4] border-none"
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="filterCashShift" className="text-xs text-gray-500">
+                                    Caja
+                                </Label>
+                                <Select
+                                    value={filterCashShift === ALL ? ALL : String(filterCashShift)}
+                                    onValueChange={(value) =>
+                                        setFilterCashShift(value === ALL ? ALL : Number(value))
+                                    }
+                                >
+                                    <SelectTrigger className="h-10 bg-[#F2EDE4] border-none">
+                                        <SelectValue placeholder="Todas" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-[#F2EDE4] border border-[#E5D9D1] max-h-[260px]">
+                                        <SelectItem value={ALL}>Todas las cajas</SelectItem>
+                                        {cashShifts.map((cs) => {
+                                            const openDate = new Date(cs.startDate).toLocaleDateString(
+                                                'es-AR',
+                                                { day: '2-digit', month: '2-digit', year: 'numeric' }
+                                            );
+                                            return (
+                                                <SelectItem key={cs.id} value={String(cs.id)}>
+                                                    #{cs.id} · {openDate}
+                                                    {!cs.endDate ? ' (abierta)' : ''}
+                                                </SelectItem>
+                                            );
+                                        })}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs text-gray-500">Estado pedido</Label>
+                                <Select
+                                    value={filterOrderStatus}
+                                    onValueChange={(v) =>
+                                        setFilterOrderStatus(v as OrderStatus | typeof ALL)
+                                    }
+                                >
+                                    <SelectTrigger className="h-10 bg-[#F2EDE4] border-none">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-[#F2EDE4] border border-[#E5D9D1]">
+                                        <SelectItem value={ALL}>Todos</SelectItem>
+                                        <SelectItem value="PENDING">Pendiente</SelectItem>
+                                        <SelectItem value="PREPARING">En preparación</SelectItem>
+                                        <SelectItem value="READY">Listo</SelectItem>
+                                        <SelectItem value="DELIVERED">Entregado</SelectItem>
+                                        <SelectItem value="CANCELLED">Cancelado</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs text-gray-500">Estado pago</Label>
+                                <Select
+                                    value={filterPaymentStatus}
+                                    onValueChange={(v) =>
+                                        setFilterPaymentStatus(v as PaymentStatus | typeof ALL)
+                                    }
+                                >
+                                    <SelectTrigger className="h-10 bg-[#F2EDE4] border-none">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-[#F2EDE4] border border-[#E5D9D1]">
+                                        <SelectItem value={ALL}>Todos</SelectItem>
+                                        <SelectItem value="PENDING">Pendiente</SelectItem>
+                                        <SelectItem value="PAID">Pagado</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs text-gray-500">Método de pago</Label>
+                                <Select
+                                    value={filterPaymentMethod}
+                                    onValueChange={(v) =>
+                                        setFilterPaymentMethod(v as PaymentMethod | typeof ALL)
+                                    }
+                                >
+                                    <SelectTrigger className="h-10 bg-[#F2EDE4] border-none">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-[#F2EDE4] border border-[#E5D9D1]">
+                                        <SelectItem value={ALL}>Todos</SelectItem>
+                                        <SelectItem value="CASH">Efectivo</SelectItem>
+                                        <SelectItem value="CARD">Tarjeta</SelectItem>
+                                        <SelectItem value="TRANSFER">Transferencia</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="flex items-end">
+                                {hasActiveFilters && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleClearFilters}
+                                        className="w-full border-[#E5D9D1] hover:bg-[#F2EDE4]"
+                                    >
+                                        <FilterX className="w-4 h-4 mr-2" />
+                                        Limpiar filtros
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-[#E5D9D1] overflow-hidden">
+                {loading ? (
+                    <div className="flex flex-col items-center gap-3 py-16 text-gray-500">
+                        <Loader2 className="h-8 w-8 animate-spin text-[#F24452]" />
+                        <span className="text-sm">Cargando pedidos...</span>
+                    </div>
+                ) : filteredOrders.length === 0 ? (
+                    <div className="flex flex-col items-center gap-3 py-16 text-center max-w-sm mx-auto">
+                        <History className="h-10 w-10 text-[#E5D9D1]" />
+                        <p className="text-sm font-medium text-[#262626]">
+                            {orders.length === 0
+                                ? 'Todavía no hay pedidos'
+                                : 'Ningún pedido coincide con los filtros'}
+                        </p>
+                        {hasActiveFilters && orders.length > 0 && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleClearFilters}
+                                className="mt-1 border-[#E5D9D1]"
+                            >
+                                Limpiar filtros
+                            </Button>
+                        )}
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader className="bg-gradient-to-r from-[#F2EDE4] to-[#F8F4F0]">
+                                <TableRow className="border-b border-[#E5D9D1] hover:bg-transparent">
+                                    <TableHead className="font-semibold text-[#262626]">#</TableHead>
+                                    <TableHead className="font-semibold text-[#262626]">Caja</TableHead>
+                                    <TableHead className="font-semibold text-[#262626]">Fecha</TableHead>
+                                    <TableHead className="font-semibold text-[#262626]">Cliente</TableHead>
+                                    <TableHead className="font-semibold text-[#262626]">Estado</TableHead>
+                                    <TableHead className="font-semibold text-[#262626]">Pago</TableHead>
+                                    <TableHead className="font-semibold text-[#262626] hidden md:table-cell">
+                                        Método
+                                    </TableHead>
+                                    <TableHead className="text-right font-semibold text-[#262626]">
+                                        Total
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {filteredOrders.map((order) => {
+                                    const orderCashShift = cashShifts.find(
+                                        (cs) => cs.id === order.cashShiftId
+                                    );
+                                    const orderDate = new Date(order.createdAt);
+                                    const orderTimeDisplay = !Number.isNaN(orderDate.getTime())
+                                        ? orderDate.toLocaleTimeString('es-AR', {
+                                              hour: '2-digit',
+                                              minute: '2-digit',
+                                          })
+                                        : '';
+                                    const cashShiftDate = orderCashShift
+                                        ? new Date(orderCashShift.startDate)
+                                        : null;
+                                    const dateDisplay =
+                                        cashShiftDate && !Number.isNaN(cashShiftDate.getTime())
+                                            ? cashShiftDate.toLocaleDateString('es-AR', {
+                                                  day: '2-digit',
+                                                  month: 'short',
+                                                  year: 'numeric',
+                                              })
+                                            : orderDate.toLocaleDateString('es-AR', {
+                                                  day: '2-digit',
+                                                  month: 'short',
+                                                  year: 'numeric',
+                                              });
+                                    const totalValue =
+                                        typeof order.total === 'number'
                                             ? order.total
                                             : Number(order.total);
-                                        const totalDisplay = Number.isFinite(totalValue)
-                                            ? formatCurrency(totalValue)
-                                            : formatCurrency(0);
 
-                                        return (
-                                            <TableRow key={order.id} className="border-b border-gray-200 hover:bg-gray-50">
-                                                <TableCell className="font-medium text-gray-900">#{order.id}</TableCell>
-                                                <TableCell className="text-gray-600">
-                                                    <div className="flex items-center gap-1">
-                                                        <Wallet className="h-3 w-3 text-[#F24452]" />
-                                                        <span className="text-xs">#{order.cashShiftId || 'N/A'}</span>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="text-gray-600">
-                                                    <div className="flex flex-col">
-                                                        <span className="font-medium">{dateDisplay}</span>
-                                                        <span className="text-xs text-gray-500">{orderTimeDisplay}</span>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="text-gray-600">{order.customerName || 'Sin cliente'}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge className={`${OrderStatusColors[order.orderStatus]} border`}>
-                                                        {OrderStatusLabels[order.orderStatus]}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell>
-                                                    {order.paymentStatus === 'PAID' ? (
-                                                        <Badge className="bg-green-500 text-white border-0 font-semibold">
-                                                            ✓ {PaymentStatusLabels[order.paymentStatus]}
-                                                        </Badge>
-                                                    ) : (
-                                                        <Badge className="bg-red-500 text-white border-0 font-semibold">
-                                                            ⚠ {PaymentStatusLabels[order.paymentStatus]}
-                                                        </Badge>
-                                                    )}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <span className="text-gray-600">
-                                                        {PaymentMethodLabels[order.paymentMethod]}
+                                    return (
+                                        <TableRow
+                                            key={order.id}
+                                            className="border-b border-[#F2EDE4] hover:bg-[#FFF9F5]"
+                                        >
+                                            <TableCell className="font-medium text-[#262626]">
+                                                #{order.id}
+                                            </TableCell>
+                                            <TableCell>
+                                                <span className="inline-flex items-center gap-1 text-xs text-gray-600">
+                                                    <Wallet className="h-3 w-3 text-[#F24452]" />
+                                                    {order.cashShiftId ?? '—'}
+                                                </span>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm text-[#262626]">
+                                                        {dateDisplay}
                                                     </span>
-                                                </TableCell>
-                                                <TableCell className="text-right font-semibold text-gray-900">
-                                                    {totalDisplay}
-                                                </TableCell>
-                                            </TableRow>
-                                        );
-                                    })}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+                                                    <span className="text-xs text-gray-400">
+                                                        {orderTimeDisplay}
+                                                    </span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-gray-600 max-w-[140px] truncate">
+                                                {order.customerName || (
+                                                    <span className="text-gray-400 italic">
+                                                        Sin cliente
+                                                    </span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge
+                                                    className={`${OrderStatusColors[order.orderStatus]} border text-xs`}
+                                                >
+                                                    {OrderStatusLabels[order.orderStatus]}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                {order.paymentStatus === 'PAID' ? (
+                                                    <Badge className="bg-emerald-500/90 text-white border-0 text-xs">
+                                                        {PaymentStatusLabels[order.paymentStatus]}
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge className="bg-[#F24452]/90 text-white border-0 text-xs">
+                                                        {PaymentStatusLabels[order.paymentStatus]}
+                                                    </Badge>
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="hidden md:table-cell text-sm text-gray-600">
+                                                {order.paymentMethod
+                                                    ? PaymentMethodLabels[order.paymentMethod]
+                                                    : '—'}
+                                            </TableCell>
+                                            <TableCell className="text-right font-semibold text-[#262626] tabular-nums">
+                                                {formatCurrency(
+                                                    Number.isFinite(totalValue) ? totalValue : 0
+                                                )}
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
+                            </TableBody>
+                        </Table>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
