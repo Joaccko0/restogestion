@@ -170,14 +170,14 @@ export function ExpenseForm({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="bg-white max-w-4xl max-h-[90vh] overflow-y-auto p-0 gap-0">
-                <DialogHeader className="px-6 pt-6 pb-4 border-b border-[#E5D9D1]">
+                <DialogHeader className="px-4 sm:px-6 pt-5 sm:pt-6 pb-4 border-b border-[#E5D9D1]">
                     <DialogTitle className="flex items-center gap-2 text-lg">
                         <ShoppingCart className="h-5 w-5 text-[#F24452]" />
                         {isEditMode ? `Editar gasto #${editingExpense!.id}` : 'Registrar nuevo gasto'}
                     </DialogTitle>
                 </DialogHeader>
 
-                <div className="px-6 py-5 space-y-5">
+                <div className="px-4 sm:px-6 py-5 space-y-5">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                             <Label htmlFor="supplier" className="text-sm text-gray-600">
@@ -189,7 +189,7 @@ export function ExpenseForm({
                                     setSupplierId(value === 'none' ? undefined : parseInt(value, 10))
                                 }
                             >
-                                <SelectTrigger className="h-10 w-full bg-[#F2EDE4] border-[#E5D9D1]">
+                                <SelectTrigger className="h-11 w-full bg-[#F2EDE4] border-[#E5D9D1]">
                                     <SelectValue placeholder="Seleccionar proveedor..." />
                                 </SelectTrigger>
                                 <SelectContent className="bg-white">
@@ -213,7 +213,7 @@ export function ExpenseForm({
                                 value={date}
                                 onChange={(e) => setDate(e.target.value)}
                                 required
-                                className="h-10 bg-[#F2EDE4] border-[#E5D9D1] focus-visible:ring-[#F24452]/30"
+                                className="h-11 bg-[#F2EDE4] border-[#E5D9D1] focus-visible:ring-[#F24452]/30"
                             />
                         </div>
                     </div>
@@ -261,7 +261,7 @@ export function ExpenseForm({
                                                     setNewItemSupplyId(parseInt(value, 10))
                                                 }
                                             >
-                                                <SelectTrigger className="h-9 bg-[#F2EDE4] border-[#E5D9D1]">
+                                                <SelectTrigger className="h-10 bg-[#F2EDE4] border-[#E5D9D1]">
                                                     <SelectValue placeholder="Seleccionar..." />
                                                 </SelectTrigger>
                                                 <SelectContent className="bg-white max-h-[240px]">
@@ -299,7 +299,7 @@ export function ExpenseForm({
                                                 value={newItemQuantity}
                                                 onChange={(e) => setNewItemQuantity(e.target.value)}
                                                 placeholder="0"
-                                                className="h-9 bg-[#F2EDE4] border-[#E5D9D1]"
+                                                className="h-10 bg-[#F2EDE4] border-[#E5D9D1]"
                                                 onKeyDown={(e) =>
                                                     e.key === 'Enter' &&
                                                     (e.preventDefault(), handleAddItem())
@@ -319,7 +319,7 @@ export function ExpenseForm({
                                                     setNewItemUnitPrice(e.target.value)
                                                 }
                                                 placeholder="0,00"
-                                                className="h-9 bg-[#F2EDE4] border-[#E5D9D1]"
+                                                className="h-10 bg-[#F2EDE4] border-[#E5D9D1]"
                                                 onKeyDown={(e) =>
                                                     e.key === 'Enter' &&
                                                     (e.preventDefault(), handleAddItem())
@@ -330,7 +330,7 @@ export function ExpenseForm({
                                             type="button"
                                             onClick={handleAddItem}
                                             size="sm"
-                                            className="bg-[#F24452] hover:bg-[#F23D3D] h-9 w-full lg:w-auto"
+                                            className="bg-[#F24452] hover:bg-[#F23D3D] h-10 w-full lg:w-auto"
                                         >
                                             <Plus className="h-4 w-4 mr-1" />
                                             Agregar
@@ -412,31 +412,31 @@ export function ExpenseForm({
                     </div>
 
                     {items.length > 0 && (
-                        <div className="flex justify-between items-center p-4 rounded-xl bg-[#F24452]/5 border border-[#F24452]/20">
+                    <div className="flex justify-between items-center p-4 rounded-xl bg-[#F24452]/5 border border-[#F24452]/20">
                             <div className="flex items-center gap-2 text-[#262626]">
                                 <DollarSign className="h-5 w-5 text-[#F24452]" />
                                 <span className="font-semibold">Total estimado</span>
                             </div>
-                            <span className="text-2xl font-bold text-[#F24452] tabular-nums">
+                            <span className="text-xl sm:text-2xl font-bold text-[#F24452] tabular-nums">
                                 {formatCurrency(total)}
                             </span>
                         </div>
                     )}
                 </div>
 
-                <DialogFooter className="px-6 py-4 border-t border-[#E5D9D1] bg-gray-50/50">
+                <DialogFooter className="px-4 sm:px-6 py-4 border-t border-[#E5D9D1] bg-gray-50/50">
                     <Button
                         variant="outline"
                         onClick={() => onOpenChange(false)}
                         disabled={isSubmitting}
-                        className="border-[#E5D9D1]"
+                        className="border-[#E5D9D1] touch-target"
                     >
                         Cancelar
                     </Button>
                     <Button
                         onClick={() => void handleSubmit()}
                         disabled={isSubmitting || items.length === 0 || noSupplies}
-                        className="bg-[#F24452] hover:bg-[#F23D3D]"
+                        className="bg-[#F24452] hover:bg-[#F23D3D] touch-target"
                     >
                         {isSubmitting
                             ? 'Guardando...'

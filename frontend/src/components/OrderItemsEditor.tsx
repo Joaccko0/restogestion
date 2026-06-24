@@ -136,7 +136,7 @@ export function OrderItemsEditor({
                     <Button
                         type="button"
                         size="sm"
-                        className="h-8 bg-[#F24452] hover:bg-[#F23D3D] text-white"
+                        className="h-10 bg-[#F24452] hover:bg-[#F23D3D] text-white"
                         onClick={onSave}
                         disabled={saving || cart.length === 0}
                     >
@@ -149,7 +149,7 @@ export function OrderItemsEditor({
                 {cart.map((item) => (
                     <div
                         key={`${item.type}-${item.id}`}
-                        className="flex items-center gap-2 bg-[#F2EDE4]/70 p-3 rounded-lg border border-[#E5D9D1]/60"
+                        className="flex flex-col sm:flex-row sm:items-center gap-2 bg-[#F2EDE4]/70 p-3 rounded-lg border border-[#E5D9D1]/60"
                     >
                         <div className="flex-1 min-w-0">
                             <div className="font-medium text-sm truncate">{item.name}</div>
@@ -157,12 +157,12 @@ export function OrderItemsEditor({
                                 {formatCurrency(item.price)} c/u
                             </div>
                         </div>
-                        <div className="flex items-center gap-1 shrink-0">
+                        <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto">
                             <Button
                                 type="button"
                                 variant="outline"
                                 size="icon"
-                                className="h-7 w-7 border-[#E5D9D1]"
+                                className="h-8 w-8 border-[#E5D9D1]"
                                 onClick={() => updateQty(item.type, item.id, -1)}
                             >
                                 <Minus className="h-3 w-3" />
@@ -174,7 +174,7 @@ export function OrderItemsEditor({
                                 type="button"
                                 variant="outline"
                                 size="icon"
-                                className="h-7 w-7 border-[#E5D9D1]"
+                                className="h-8 w-8 border-[#E5D9D1]"
                                 onClick={() => updateQty(item.type, item.id, 1)}
                             >
                                 <Plus className="h-3 w-3" />
@@ -183,13 +183,13 @@ export function OrderItemsEditor({
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7 text-gray-400 hover:text-[#F24452]"
+                                className="h-8 w-8 text-gray-400 hover:text-[#F24452]"
                                 onClick={() => removeItem(item.type, item.id)}
                             >
                                 <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                         </div>
-                        <div className="font-semibold text-sm text-[#F24452] tabular-nums w-20 text-right shrink-0">
+                        <div className="font-semibold text-sm text-[#F24452] tabular-nums w-full sm:w-20 text-right shrink-0">
                             {formatCurrency(item.price * item.quantity)}
                         </div>
                     </div>

@@ -94,12 +94,12 @@ export function ProductForm({ open, onOpenChange, onSubmit, editingProduct, cate
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="bg-white max-w-2xl max-h-[85vh] flex flex-col">
-                <DialogHeader>
+            <DialogContent className="bg-white max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0">
+                <DialogHeader className="px-4 sm:px-6 py-4 border-b border-[#E5D9D1]">
                     <DialogTitle>{title}</DialogTitle>
                 </DialogHeader>
                 
-                <div className="grid gap-3 py-4 flex-1 overflow-y-auto overflow-x-hidden">
+                <div className="grid gap-3 px-4 sm:px-6 py-4 flex-1 overflow-y-auto overflow-x-hidden">
                     {/* Nombre */}
                     <div className="grid gap-1.5">
                         <Label htmlFor="title" className="text-sm">Nombre</Label>
@@ -109,12 +109,12 @@ export function ProductForm({ open, onOpenChange, onSubmit, editingProduct, cate
                             onChange={(e) => handleChange('title', e.target.value)}
                             placeholder="Ej: Pizza Muzzarella"
                             required
-                            className="h-10 focus-visible:ring-0 focus:border-[#F24452] focus-visible:outline-none"
+                            className="h-11 focus-visible:ring-0 focus:border-[#F24452] focus-visible:outline-none"
                         />
                     </div>
 
                     {/* Precio y Categoría */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="grid gap-1.5">
                             <Label htmlFor="price" className="text-sm">Precio</Label>
                             <Input
@@ -125,7 +125,7 @@ export function ProductForm({ open, onOpenChange, onSubmit, editingProduct, cate
                                 placeholder="0.00"
                                 min="0"
                                 step="0.01"
-                                className="h-10 focus-visible:ring-0 focus:border-[#F24452] focus-visible:outline-none"
+                                className="h-11 focus-visible:ring-0 focus:border-[#F24452] focus-visible:outline-none"
                             />
                         </div>
 
@@ -138,7 +138,7 @@ export function ProductForm({ open, onOpenChange, onSubmit, editingProduct, cate
                                 onValueChange={(val) => handleChange('category', val)}
                                 disabled={categories.length === 0}
                             >
-                                <SelectTrigger className="h-10 bg-[#F2EDE4] border-[#E5D9D1] focus:border-[#F24452] focus:ring-0 overflow-hidden text-ellipsis whitespace-nowrap">
+                                <SelectTrigger className="h-11 bg-[#F2EDE4] border-[#E5D9D1] focus:border-[#F24452] focus:ring-0 overflow-hidden text-ellipsis whitespace-nowrap">
                                     <SelectValue placeholder="Seleccionar categoría" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-[#F2EDE4] border border-[#E5D9D1] shadow-lg max-h-[260px]">
@@ -171,17 +171,18 @@ export function ProductForm({ open, onOpenChange, onSubmit, editingProduct, cate
                     </div>
                 </div>
 
-                <DialogFooter>
+                <DialogFooter className="px-4 sm:px-6 py-4 border-t border-[#E5D9D1] bg-gray-50/60">
                     <Button
                         variant="outline"
                         onClick={() => onOpenChange(false)}
                         disabled={isSubmitting}
+                        className="touch-target"
                     >
                         Cancelar
                     </Button>
                     <Button
                         onClick={handleSubmit}
-                        className="bg-[#F24452] hover:bg-[#F23D3D] text-white"
+                        className="bg-[#F24452] hover:bg-[#F23D3D] text-white touch-target"
                         disabled={isSubmitting || !canSubmit}
                     >
                         {isSubmitting ? 'Guardando...' : isEditMode ? 'Actualizar' : 'Guardar'}

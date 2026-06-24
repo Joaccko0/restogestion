@@ -23,7 +23,7 @@ export function CashShiftStatus({ cashShift, onOpenClick, onCloseClick, loading 
         return (
             <Card className="border-orange-200 bg-orange-50">
                 <CardContent className="pt-6">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div className="flex items-center gap-3">
                             <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
                                 <DollarSign className="w-6 h-6 text-orange-600" />
@@ -36,7 +36,7 @@ export function CashShiftStatus({ cashShift, onOpenClick, onCloseClick, loading 
                         <Button
                             onClick={onOpenClick}
                             disabled={loading}
-                            className="bg-[#F24452] hover:bg-[#d63c47]"
+                            className="bg-[#F24452] hover:bg-[#d63c47] touch-target self-start sm:self-auto"
                         >
                             Abrir Caja
                         </Button>
@@ -58,7 +58,7 @@ export function CashShiftStatus({ cashShift, onOpenClick, onCloseClick, loading 
         <Card className="border-green-200 bg-green-50">
             <CardContent className="pt-6">
                 {/* Header con título y botón de cerrar */}
-                <div className="flex items-center justify-between gap-4 mb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
                     <div className="flex items-center gap-3 flex-1">
                         <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
                             <DollarSign className="w-6 h-6 text-green-600" />
@@ -68,7 +68,7 @@ export function CashShiftStatus({ cashShift, onOpenClick, onCloseClick, loading 
                                 <p className="font-semibold text-gray-800">Caja Abierta</p>
                                 <Badge className="bg-green-600 hover:bg-green-700">ACTIVA</Badge>
                             </div>
-                            <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-1 text-sm text-gray-600">
                                 <span className="flex items-center gap-1">
                                     <Clock className="w-4 h-4" />
                                     {timeOpen}
@@ -81,14 +81,14 @@ export function CashShiftStatus({ cashShift, onOpenClick, onCloseClick, loading 
                     <Button
                         onClick={onCloseClick}
                         disabled={loading}
-                        className="bg-[#F24452] hover:bg-[#d63c47] text-white"
+                        className="bg-[#F24452] hover:bg-[#d63c47] text-white touch-target self-start sm:self-auto"
                     >
                         Cerrar Caja
                     </Button>
                 </div>
 
                 {/* Estadísticas */}
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="bg-white rounded-lg p-3 border border-green-100">
                         <p className="text-xs text-gray-600 font-medium">Monto Inicial</p>
                         <p className="text-lg font-bold text-green-700">

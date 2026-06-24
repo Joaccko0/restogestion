@@ -142,7 +142,7 @@ export function CloseCashDialog({
                 }}
             >
                 <DialogContent className="bg-white sm:max-w-[560px] max-h-[90vh] overflow-y-auto p-0 gap-0">
-                    <DialogHeader className="px-6 pt-6 pb-4 border-b border-[#E5D9D1]">
+                    <DialogHeader className="px-4 sm:px-6 pt-5 sm:pt-6 pb-4 border-b border-[#E5D9D1]">
                         <DialogTitle className="flex items-center gap-2 text-lg">
                             <DollarSign className="w-5 h-5 text-[#F24452]" />
                             Cerrar caja
@@ -152,7 +152,7 @@ export function CloseCashDialog({
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="px-6 py-5 space-y-4">
+                    <div className="px-4 sm:px-6 py-5 space-y-4">
                         {unpaidOrders.length > 0 && (
                             <div className="flex items-start gap-3 p-3 rounded-xl border border-[#F24452]/30 bg-[#F24452]/5">
                                 <AlertTriangle className="h-5 w-5 text-[#F24452] shrink-0 mt-0.5" />
@@ -237,7 +237,7 @@ export function CloseCashDialog({
                                         setEndAmount(e.target.value);
                                         setError('');
                                     }}
-                                    className="pl-8 bg-[#F2EDE4] border-[#E5D9D1]"
+                                    className="pl-8 h-11 bg-[#F2EDE4] border-[#E5D9D1]"
                                     min="0"
                                     step="0.01"
                                     disabled={loading}
@@ -291,7 +291,7 @@ export function CloseCashDialog({
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    className="border-[#E5D9D1] shrink-0"
+                                    className="border-[#E5D9D1] shrink-0 touch-target"
                                     onClick={() => setShowManualDialog(true)}
                                 >
                                     {manualLoaded ? 'Editar resumen' : 'Cargar resumen'}
@@ -300,14 +300,14 @@ export function CloseCashDialog({
                         </div>
                     </div>
 
-                    <DialogFooter className="px-6 py-4 border-t border-[#E5D9D1] bg-gray-50/50">
-                        <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+                    <DialogFooter className="px-4 sm:px-6 py-4 border-t border-[#E5D9D1] bg-gray-50/50">
+                        <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading} className="touch-target">
                             Cancelar
                         </Button>
                         <Button
                             onClick={() => void handleSubmit()}
                             disabled={loading}
-                            className="bg-[#F24452] hover:bg-[#F23D3D]"
+                            className="bg-[#F24452] hover:bg-[#F23D3D] touch-target"
                         >
                             {loading ? 'Cerrando...' : 'Cerrar caja'}
                         </Button>

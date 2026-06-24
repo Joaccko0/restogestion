@@ -90,7 +90,7 @@ export function OpenCashDialog({ open, onOpenChange, onSubmit, loading = false }
                                     setStartAmount(e.target.value);
                                     setError('');
                                 }}
-                                className="pl-8 bg-[#F2EDE4] border-[#E5D9D1] focus:border-[#F24452] focus:ring-0"
+                                className="pl-8 h-11 bg-[#F2EDE4] border-[#E5D9D1] focus:border-[#F24452] focus:ring-0"
                                 min="0"
                                 step="0.01"
                                 disabled={loading}
@@ -110,13 +110,14 @@ export function OpenCashDialog({ open, onOpenChange, onSubmit, loading = false }
                         variant="outline"
                         onClick={() => handleOpenChange(false)}
                         disabled={loading}
+                        className="touch-target"
                     >
                         Cancelar
                     </Button>
                     <Button
                         onClick={handleSubmit}
                         disabled={loading}
-                        className="bg-[#F24452] hover:bg-[#d63c47]"
+                        className="bg-[#F24452] hover:bg-[#d63c47] touch-target"
                     >
                         {loading ? 'Abriendo...' : 'Abrir Caja'}
                     </Button>

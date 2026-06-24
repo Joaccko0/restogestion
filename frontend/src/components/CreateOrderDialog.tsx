@@ -184,15 +184,15 @@ export function CreateOrderDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="bg-white max-w-[1100px] w-[1000px] flex flex-col">
-                <DialogHeader>
+            <DialogContent className="bg-white max-w-6xl w-full flex flex-col p-0 gap-0">
+                <DialogHeader className="px-4 sm:px-6 py-4 border-b border-[#E5D9D1]">
                     <DialogTitle>Nuevo Pedido</DialogTitle>
                 </DialogHeader>
 
-                <div className="grid grid-cols-2 gap-6 flex-1 overflow-hidden">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 flex-1 overflow-hidden px-4 sm:px-6 py-4 sm:py-5">
                     {/* Columna izquierda: Productos y combos */}
-                    <ScrollArea className="h-[620px] pr-4">
-                        <div className="grid grid-cols-2 gap-4">
+                    <ScrollArea className="max-h-[45vh] lg:max-h-[620px] lg:pr-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {/* Productos */}
                             <div>
                                 <h4 className="font-semibold text-sm mb-2">Productos</h4>
@@ -211,7 +211,7 @@ export function CreateOrderDialog({
                                             <Button
                                                 size="sm"
                                                 onClick={() => addToCart('product', product.id, product.title, product.price)}
-                                                className="bg-[#F24452] hover:bg-[#F23D3D] h-8"
+                                                className="bg-[#F24452] hover:bg-[#F23D3D] h-9 w-9"
                                             >
                                                 <Plus className="w-4 h-4" />
                                             </Button>
@@ -239,7 +239,7 @@ export function CreateOrderDialog({
                                                 <Button
                                                     size="sm"
                                                     onClick={() => addToCart('combo', combo.id, combo.name, combo.price)}
-                                                    className="bg-[#F24452] hover:bg-[#F23D3D] h-8"
+                                                    className="bg-[#F24452] hover:bg-[#F23D3D] h-9 w-9"
                                                 >
                                                     <Plus className="w-4 h-4" />
                                                 </Button>
@@ -254,7 +254,7 @@ export function CreateOrderDialog({
                     {/* Columna derecha: Carrito y opciones */}
                     <div className="flex flex-col gap-4">
                         {/* Carrito */}
-                        <div className="flex-1 border-2 border-[#E5D9D1] rounded-lg p-3 overflow-y-auto">
+                        <div className="flex-1 border-2 border-[#E5D9D1] rounded-lg p-3 overflow-y-auto min-h-[180px]">
                             <h4 className="font-semibold text-sm mb-2">Carrito ({cart.length})</h4>
                             {cart.length === 0 ? (
                                 <div className="text-center text-sm text-gray-400 py-8">
@@ -274,7 +274,7 @@ export function CreateOrderDialog({
                                                 <Button
                                                     size="icon"
                                                     variant="outline"
-                                                    className="h-6 w-6"
+                                                    className="h-8 w-8"
                                                     onClick={() => updateQuantity(item.type, item.id, -1)}
                                                 >
                                                     <Minus className="w-3 h-3" />
@@ -285,7 +285,7 @@ export function CreateOrderDialog({
                                                 <Button
                                                     size="icon"
                                                     variant="outline"
-                                                    className="h-6 w-6"
+                                                    className="h-8 w-8"
                                                     onClick={() => updateQuantity(item.type, item.id, 1)}
                                                 >
                                                     <Plus className="w-3 h-3" />
@@ -293,7 +293,7 @@ export function CreateOrderDialog({
                                                 <Button
                                                     size="icon"
                                                     variant="ghost"
-                                                    className="h-6 w-6 text-red-500"
+                                                    className="h-8 w-8 text-red-500"
                                                     onClick={() => removeFromCart(item.type, item.id)}
                                                 >
                                                     <Trash2 className="w-3 h-3" />
@@ -307,11 +307,11 @@ export function CreateOrderDialog({
 
                         {/* Opciones */}
                         <div className="space-y-3">
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div className="grid gap-1.5">
                                     <Label className="text-sm">Método de Pago</Label>
                                     <Select value={paymentMethod} onValueChange={(val) => setPaymentMethod(val as PaymentMethod)}>
-                                        <SelectTrigger className="h-10 bg-[#F2EDE4] border-[#E5D9D1] focus:border-[#F24452] focus:ring-0 overflow-hidden text-ellipsis whitespace-nowrap">
+                                        <SelectTrigger className="h-11 bg-[#F2EDE4] border-[#E5D9D1] focus:border-[#F24452] focus:ring-0 overflow-hidden text-ellipsis whitespace-nowrap">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent className="bg-[#F2EDE4] border border-[#E5D9D1] shadow-lg max-h-[260px]">
@@ -325,7 +325,7 @@ export function CreateOrderDialog({
                                 <div className="grid gap-1.5">
                                     <Label className="text-sm">Método de Entrega</Label>
                                     <Select value={deliveryMethod} onValueChange={(val) => setDeliveryMethod(val as DeliveryMethod)}>
-                                        <SelectTrigger className="h-10 bg-[#F2EDE4] border-[#E5D9D1] focus:border-[#F24452] focus:ring-0 overflow-hidden text-ellipsis whitespace-nowrap">
+                                        <SelectTrigger className="h-11 bg-[#F2EDE4] border-[#E5D9D1] focus:border-[#F24452] focus:ring-0 overflow-hidden text-ellipsis whitespace-nowrap">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent className="bg-[#F2EDE4] border border-[#E5D9D1] shadow-lg max-h-[260px]">
@@ -365,7 +365,7 @@ export function CreateOrderDialog({
                                         type="button"
                                         size="sm"
                                         onClick={() => setShowCustomerAddressDialog(true)}
-                                        className="bg-[#F24452] hover:bg-[#d93a48] cursor-pointer h-8 shrink-0"
+                                        className="bg-[#F24452] hover:bg-[#d93a48] cursor-pointer h-10 shrink-0"
                                     >
                                         {deliveryMethod === DM.DELIVERY ? (
                                             <>
@@ -453,7 +453,7 @@ export function CreateOrderDialog({
                                             step="0.01"
                                             value={deliveryFeeInput}
                                             onChange={(e) => setDeliveryFeeInput(e.target.value)}
-                                            className="h-8 w-28 text-right bg-[#F2EDE4] border-[#E5D9D1] ml-auto"
+                                            className="h-10 w-32 text-right bg-[#F2EDE4] border-[#E5D9D1] ml-auto"
                                         />
                                     </div>
                                 )}
@@ -472,14 +472,14 @@ export function CreateOrderDialog({
                     </div>
                 </div>
 
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting} className="cursor-pointer">
+                <DialogFooter className="px-4 sm:px-6 py-4 border-t border-[#E5D9D1] bg-gray-50/70">
+                    <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting} className="cursor-pointer touch-target">
                         Cancelar
                     </Button>
                     <Button
                         onClick={handleSubmit}
                         disabled={cart.length === 0 || isSubmitting}
-                        className="bg-[#F24452] hover:bg-[#F23D3D] cursor-pointer"
+                        className="bg-[#F24452] hover:bg-[#F23D3D] cursor-pointer touch-target"
                     >
                         {isSubmitting ? 'Creando...' : 'Crear Pedido'}
                     </Button>

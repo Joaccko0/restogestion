@@ -321,14 +321,14 @@ export function OrderDetailsDialog({
         <>
             <Dialog open={open} onOpenChange={onOpenChange}>
                 <DialogContent className="bg-white max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0 gap-0">
-                    <DialogHeader className="px-6 pt-6 pb-4 border-b border-gray-100">
+                    <DialogHeader className="px-4 sm:px-6 pt-5 sm:pt-6 pb-4 border-b border-gray-100">
                         <DialogTitle className="flex items-center gap-2 text-xl">
                             <Package className="w-5 h-5 text-[#F24452]" />
                             Pedido #{order.id}
                         </DialogTitle>
                     </DialogHeader>
 
-                    <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">
+                    <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-5">
                         <div className="rounded-xl border border-[#E5D9D1] bg-[#F2EDE4]/40 p-4 space-y-3">
                             <div className="flex items-center justify-between">
                                 <div>
@@ -533,7 +533,7 @@ export function OrderDetailsDialog({
                             )}
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-1.5">
                                 <div className="text-xs text-gray-500 flex items-center gap-1">
                                     <MapPin className="w-3 h-3" />
@@ -545,7 +545,7 @@ export function OrderDetailsDialog({
                                         void handleDeliveryMethodChange(val as DeliveryMethod)
                                     }
                                 >
-                                    <SelectTrigger className="h-9 w-full bg-white border-gray-300">
+                                            <SelectTrigger className="h-10 w-full bg-white border-gray-300">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent className="bg-white">
@@ -567,7 +567,7 @@ export function OrderDetailsDialog({
                                     <Clock className="w-3 h-3" />
                                     Creado
                                 </div>
-                                <div className="font-medium text-sm pt-2">{createdDate}</div>
+                                <div className="font-medium text-sm pt-2 break-words">{createdDate}</div>
                             </div>
 
                             {isDelivery && (
@@ -587,7 +587,7 @@ export function OrderDetailsDialog({
                                                     const fee = parseFloat(deliveryFeeInput) || 0;
                                                     void onUpdateDetails?.(order.id, { deliveryFee: fee });
                                                 }}
-                                                className="h-8 w-28 text-right bg-white border-[#E5D9D1]"
+                                                className="h-10 w-32 text-right bg-white border-[#E5D9D1]"
                                             />
                                         </div>
                                     </div>
@@ -667,14 +667,14 @@ export function OrderDetailsDialog({
                     {onCancel &&
                         order.orderStatus !== 'DELIVERED' &&
                         order.orderStatus !== 'CANCELLED' && (
-                            <div className="border-t border-gray-100 px-6 py-4 flex justify-between gap-2 bg-gray-50/50">
-                                <Button variant="outline" onClick={() => onOpenChange(false)}>
+                            <div className="border-t border-gray-100 px-4 sm:px-6 py-4 flex flex-col-reverse sm:flex-row justify-between gap-2 bg-gray-50/50">
+                                <Button variant="outline" onClick={() => onOpenChange(false)} className="touch-target">
                                     Cerrar
                                 </Button>
                                 <Button
                                     variant="destructive"
                                     onClick={() => setConfirmCancelOpen(true)}
-                                    className="bg-[#F23D3D] hover:bg-[#F24452]"
+                                    className="bg-[#F23D3D] hover:bg-[#F24452] touch-target"
                                 >
                                     <X className="w-4 h-4 mr-1" />
                                     Cancelar pedido
