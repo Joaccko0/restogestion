@@ -79,7 +79,47 @@ export function SupplyTable({
     }
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-[#E5D9D1] overflow-hidden">
+        <>
+            <div className="md:hidden space-y-3">
+                {supplies.map((supply) => (
+                    <article
+                        key={supply.id}
+                        className="rounded-xl border border-[#E5D9D1] bg-white p-4 shadow-sm"
+                    >
+                        <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                                <Package className="h-4 w-4 text-[#F24452]/60 shrink-0" />
+                                <p className="font-medium truncate">{supply.name}</p>
+                            </div>
+                            <Badge className={getCategoryStyle(supply.category)}>
+                                {getCategoryLabel(supply.category)}
+                            </Badge>
+                        </div>
+                        <div className="flex justify-end gap-1 mt-3">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-10 w-10 text-gray-500 hover:text-[#262626] hover:bg-[#F2EDE4]"
+                                onClick={() => onEdit(supply)}
+                                title="Editar"
+                            >
+                                <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-10 w-10 text-gray-500 hover:text-[#F23D3D] hover:bg-[#F24452]/10"
+                                onClick={() => onDelete(supply.id)}
+                                title="Eliminar"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </article>
+                ))}
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-[#E5D9D1] overflow-hidden hidden md:block">
             <Table>
                 <TableHeader className="bg-gradient-to-r from-[#F2EDE4] to-[#F8F4F0]">
                     <TableRow className="border-b border-[#E5D9D1] hover:bg-transparent">
@@ -134,5 +174,6 @@ export function SupplyTable({
                 </TableBody>
             </Table>
         </div>
+        </>
     );
 }

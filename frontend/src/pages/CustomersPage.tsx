@@ -68,7 +68,7 @@ export default function CustomersPage() {
     }, [customers, selectedCustomer]);
 
     return (
-        <div className="space-y-6">
+        <div className="app-page">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-[#262626] flex items-center gap-2">
@@ -79,13 +79,13 @@ export default function CustomersPage() {
                         Gestioná clientes y direcciones de entrega
                     </p>
                 </div>
-                <div className="flex gap-2 shrink-0">
+                <div className="flex gap-2 shrink-0 flex-wrap">
                     <Button
                         variant="outline"
                         size="sm"
                         onClick={() => void handleRefresh()}
                         disabled={isRefreshing}
-                        className="border-[#E5D9D1] text-gray-600 hover:bg-[#F2EDE4]"
+                        className="border-[#E5D9D1] text-gray-600 hover:bg-[#F2EDE4] touch-target"
                     >
                         <RefreshCw
                             className={`h-4 w-4 mr-1.5 ${isRefreshing ? 'animate-spin' : ''}`}
@@ -94,7 +94,7 @@ export default function CustomersPage() {
                     </Button>
                     <Button
                         onClick={() => handleOpenCustomerForm()}
-                        className="bg-[#F24452] hover:bg-[#F23D3D] text-white"
+                        className="bg-[#F24452] hover:bg-[#F23D3D] text-white touch-target"
                     >
                         <Plus className="mr-2 h-4 w-4" />
                         Nuevo cliente
@@ -147,7 +147,7 @@ export default function CustomersPage() {
                         placeholder="Buscar por nombre o teléfono..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-9 h-10 bg-[#F2EDE4] border-none focus-visible:ring-0 focus:border-[#F24452]"
+                        className="pl-9 h-11 bg-[#F2EDE4] border-none focus-visible:ring-0 focus:border-[#F24452]"
                     />
                 </div>
             </div>

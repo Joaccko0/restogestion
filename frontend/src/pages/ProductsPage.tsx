@@ -84,7 +84,7 @@ export default function ProductsPage() {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="app-page">
             <div>
                 <h2 className="text-2xl font-bold text-[#262626] flex items-center gap-2">
                     <Pizza className="h-7 w-7 text-[#F24452]" />
@@ -129,27 +129,27 @@ export default function ProductsPage() {
             </div>
 
             <Tabs defaultValue="products" className="w-full">
-                <TabsList className="bg-[#E5D9D1] w-full sm:w-auto grid grid-cols-3 h-auto p-1">
+                <TabsList className="bg-[#E5D9D1] w-full grid grid-cols-3 h-auto p-1">
                     <TabsTrigger
                         value="products"
-                        className="data-[state=active]:bg-[#F24452] data-[state=active]:text-white gap-1.5 text-xs sm:text-sm"
+                        className="touch-target data-[state=active]:bg-[#F24452] data-[state=active]:text-white gap-1.5 text-[11px] sm:text-sm"
                     >
                         <Pizza className="w-4 h-4 shrink-0" />
-                        Productos ({filteredProducts.length})
+                        <span className="truncate">Productos ({filteredProducts.length})</span>
                     </TabsTrigger>
                     <TabsTrigger
                         value="combos"
-                        className="data-[state=active]:bg-[#F24452] data-[state=active]:text-white gap-1.5 text-xs sm:text-sm"
+                        className="touch-target data-[state=active]:bg-[#F24452] data-[state=active]:text-white gap-1.5 text-[11px] sm:text-sm"
                     >
                         <UtensilsCrossed className="w-4 h-4 shrink-0" />
-                        Combos ({filteredCombos.length})
+                        <span className="truncate">Combos ({filteredCombos.length})</span>
                     </TabsTrigger>
                     <TabsTrigger
                         value="categories"
-                        className="data-[state=active]:bg-[#F24452] data-[state=active]:text-white gap-1.5 text-xs sm:text-sm"
+                        className="touch-target data-[state=active]:bg-[#F24452] data-[state=active]:text-white gap-1.5 text-[11px] sm:text-sm"
                     >
                         <Tags className="w-4 h-4 shrink-0" />
-                        Categorías ({categories.length})
+                        <span className="truncate">Categorías ({categories.length})</span>
                     </TabsTrigger>
                 </TabsList>
 
@@ -159,13 +159,13 @@ export default function ProductsPage() {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                             <Input
                                 placeholder="Buscar producto..."
-                                className="pl-9 h-10 bg-[#F2EDE4] border-none"
+                            className="pl-9 h-11 bg-[#F2EDE4] border-none"
                                 value={productSearchTerm}
                                 onChange={(e) => setProductSearchTerm(e.target.value)}
                             />
                         </div>
                         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                            <SelectTrigger className="h-10 w-full sm:w-44 bg-[#F2EDE4] border-[#E5D9D1]">
+                            <SelectTrigger className="h-11 w-full sm:w-44 bg-[#F2EDE4] border-[#E5D9D1]">
                                 <SelectValue placeholder="Categoría" />
                             </SelectTrigger>
                             <SelectContent className="bg-[#F2EDE4] border border-[#E5D9D1]">
@@ -178,7 +178,7 @@ export default function ProductsPage() {
                             </SelectContent>
                         </Select>
                         <Button
-                            className="bg-[#F24452] hover:bg-[#F23D3D] text-white shrink-0"
+                            className="bg-[#F24452] hover:bg-[#F23D3D] text-white shrink-0 touch-target"
                             onClick={() => handleOpenProductForm()}
                         >
                             <Plus className="w-4 h-4 mr-2" />
@@ -203,13 +203,13 @@ export default function ProductsPage() {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                             <Input
                                 placeholder="Buscar combo..."
-                                className="pl-9 h-10 bg-[#F2EDE4] border-none"
+                                className="pl-9 h-11 bg-[#F2EDE4] border-none"
                                 value={comboSearchTerm}
                                 onChange={(e) => setComboSearchTerm(e.target.value)}
                             />
                         </div>
                         <Button
-                            className="bg-[#F24452] hover:bg-[#F23D3D] text-white shrink-0"
+                            className="bg-[#F24452] hover:bg-[#F23D3D] text-white shrink-0 touch-target"
                             onClick={() => handleOpenComboForm()}
                         >
                             <Plus className="w-4 h-4 mr-2" />

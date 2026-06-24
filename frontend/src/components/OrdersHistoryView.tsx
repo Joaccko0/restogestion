@@ -216,7 +216,7 @@ export function OrdersHistoryView({ orders, loading = false, cashShifts = [] }: 
                                         type="date"
                                         value={filterDateFrom}
                                         onChange={(e) => setFilterDateFrom(e.target.value)}
-                                        className="pl-10 h-10 bg-[#F2EDE4] border-none"
+                                        className="pl-10 h-11 bg-[#F2EDE4] border-none"
                                     />
                                 </div>
                             </div>
@@ -231,7 +231,7 @@ export function OrdersHistoryView({ orders, loading = false, cashShifts = [] }: 
                                         type="date"
                                         value={filterDateTo}
                                         onChange={(e) => setFilterDateTo(e.target.value)}
-                                        className="pl-10 h-10 bg-[#F2EDE4] border-none"
+                                        className="pl-10 h-11 bg-[#F2EDE4] border-none"
                                     />
                                 </div>
                             </div>
@@ -246,7 +246,7 @@ export function OrdersHistoryView({ orders, loading = false, cashShifts = [] }: 
                                         placeholder="Nombre..."
                                         value={filterCustomer}
                                         onChange={(e) => setFilterCustomer(e.target.value)}
-                                        className="pl-10 h-10 bg-[#F2EDE4] border-none"
+                                        className="pl-10 h-11 bg-[#F2EDE4] border-none"
                                     />
                                 </div>
                             </div>
@@ -260,7 +260,7 @@ export function OrdersHistoryView({ orders, loading = false, cashShifts = [] }: 
                                         setFilterCashShift(value === ALL ? ALL : Number(value))
                                     }
                                 >
-                                    <SelectTrigger className="h-10 bg-[#F2EDE4] border-none">
+                                    <SelectTrigger className="h-11 bg-[#F2EDE4] border-none">
                                         <SelectValue placeholder="Todas" />
                                     </SelectTrigger>
                                     <SelectContent className="bg-[#F2EDE4] border border-[#E5D9D1] max-h-[260px]">
@@ -292,7 +292,7 @@ export function OrdersHistoryView({ orders, loading = false, cashShifts = [] }: 
                                         setFilterOrderStatus(v as OrderStatus | typeof ALL)
                                     }
                                 >
-                                    <SelectTrigger className="h-10 bg-[#F2EDE4] border-none">
+                                    <SelectTrigger className="h-11 bg-[#F2EDE4] border-none">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent className="bg-[#F2EDE4] border border-[#E5D9D1]">
@@ -313,7 +313,7 @@ export function OrdersHistoryView({ orders, loading = false, cashShifts = [] }: 
                                         setFilterPaymentStatus(v as PaymentStatus | typeof ALL)
                                     }
                                 >
-                                    <SelectTrigger className="h-10 bg-[#F2EDE4] border-none">
+                                    <SelectTrigger className="h-11 bg-[#F2EDE4] border-none">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent className="bg-[#F2EDE4] border border-[#E5D9D1]">
@@ -331,7 +331,7 @@ export function OrdersHistoryView({ orders, loading = false, cashShifts = [] }: 
                                         setFilterPaymentMethod(v as PaymentMethod | typeof ALL)
                                     }
                                 >
-                                    <SelectTrigger className="h-10 bg-[#F2EDE4] border-none">
+                                    <SelectTrigger className="h-11 bg-[#F2EDE4] border-none">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent className="bg-[#F2EDE4] border border-[#E5D9D1]">
@@ -386,7 +386,63 @@ export function OrdersHistoryView({ orders, loading = false, cashShifts = [] }: 
                         )}
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
+                    <>
+                    <div className="md:hidden space-y-3 p-3">
+                        {filteredOrders.map((order) => {
+                            const orderCashShift = cashShifts.find((cs) => cs.id === order.cashShiftId);
+                            const orderTimeDisplay = formatTimeAR(order.createdAt);
+                            const dateDisplay = orderCashShift
+                                ? formatDateAR(orderCashShift.startDate, {
+                                      day: '2-digit',
+                                      month: 'short',
+                                      year: 'numeric',
+                                  })
+                                : formatDateAR(order.createdAt, {
+                                      day: '2-digit',
+                                      month: 'short',
+                                      year: 'numeric',
+                                  });
+                            const totalValue =
+                                typeof order.total === 'number' ? order.total : Number(order.total);
+
+                            return (
+                                <article
+                                    key={order.id}
+                                    className="rounded-xl border border-[#E5D9D1] bg-white p-4 space-y-3"
+                                >
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div>
+                                            <p className="font-semibold text-[#262626]">Pedido #{order.id}</p>
+                                            <p className="text-xs text-gray-500">
+                                                Caja {order.cashShiftId ?? '—'} · {dateDisplay} {orderTimeDisplay}
+                                            </p>
+                                        </div>
+                                        <p className="text-lg font-bold text-[#262626] tabular-nums">
+                                            {formatCurrency(Number.isFinite(totalValue) ? totalValue : 0)}
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <Badge className={`${OrderStatusColors[order.orderStatus]} border text-xs`}>
+                                            {OrderStatusLabels[order.orderStatus]}
+                                        </Badge>
+                                        <Badge className={order.paymentStatus === 'PAID' ? 'bg-emerald-500/90 text-white border-0 text-xs' : 'bg-[#F24452]/90 text-white border-0 text-xs'}>
+                                            {PaymentStatusLabels[order.paymentStatus]}
+                                        </Badge>
+                                        <span className="text-xs text-gray-600">
+                                            {order.paymentMethod
+                                                ? PaymentMethodLabels[order.paymentMethod]
+                                                : 'Sin método'}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-gray-700">
+                                        {order.customerName || <span className="text-gray-400 italic">Sin cliente</span>}
+                                    </p>
+                                </article>
+                            );
+                        })}
+                    </div>
+
+                    <div className="overflow-x-auto hidden md:block">
                         <Table>
                             <TableHeader className="bg-gradient-to-r from-[#F2EDE4] to-[#F8F4F0]">
                                 <TableRow className="border-b border-[#E5D9D1] hover:bg-transparent">
@@ -491,6 +547,7 @@ export function OrdersHistoryView({ orders, loading = false, cashShifts = [] }: 
                             </TableBody>
                         </Table>
                     </div>
+                    </>
                 )}
             </div>
         </div>

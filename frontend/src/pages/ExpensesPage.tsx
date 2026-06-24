@@ -202,7 +202,7 @@ export default function ExpensesPage() {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="app-page">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-[#262626] flex items-center gap-2">
@@ -218,7 +218,7 @@ export default function ExpensesPage() {
                     size="sm"
                     onClick={() => void handleRefresh()}
                     disabled={isRefreshing}
-                    className="border-[#E5D9D1] text-gray-600 hover:bg-[#F2EDE4] shrink-0 self-start sm:self-auto"
+                    className="border-[#E5D9D1] text-gray-600 hover:bg-[#F2EDE4] shrink-0 self-start sm:self-auto touch-target"
                 >
                     <RefreshCw
                         className={`h-4 w-4 mr-1.5 ${isRefreshing ? 'animate-spin' : ''}`}
@@ -272,27 +272,27 @@ export default function ExpensesPage() {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="bg-[#E5D9D1] w-full sm:w-auto grid grid-cols-3 h-auto p-1">
+                <TabsList className="bg-[#E5D9D1] w-full grid grid-cols-3 h-auto p-1">
                     <TabsTrigger
                         value="expenses"
-                        className="data-[state=active]:bg-[#F24452] data-[state=active]:text-white gap-1.5 text-xs sm:text-sm"
+                        className="touch-target data-[state=active]:bg-[#F24452] data-[state=active]:text-white gap-1.5 text-[11px] sm:text-sm"
                     >
                         <Receipt className="h-4 w-4 shrink-0" />
-                        Gastos ({filteredExpenses.length})
+                        <span className="truncate">Gastos ({filteredExpenses.length})</span>
                     </TabsTrigger>
                     <TabsTrigger
                         value="suppliers"
-                        className="data-[state=active]:bg-[#F24452] data-[state=active]:text-white gap-1.5 text-xs sm:text-sm"
+                        className="touch-target data-[state=active]:bg-[#F24452] data-[state=active]:text-white gap-1.5 text-[11px] sm:text-sm"
                     >
                         <Building2 className="h-4 w-4 shrink-0" />
-                        Proveedores ({filteredSuppliers.length})
+                        <span className="truncate">Proveedores ({filteredSuppliers.length})</span>
                     </TabsTrigger>
                     <TabsTrigger
                         value="supplies"
-                        className="data-[state=active]:bg-[#F24452] data-[state=active]:text-white gap-1.5 text-xs sm:text-sm"
+                        className="touch-target data-[state=active]:bg-[#F24452] data-[state=active]:text-white gap-1.5 text-[11px] sm:text-sm"
                     >
                         <Package className="h-4 w-4 shrink-0" />
-                        Insumos ({filteredSupplies.length})
+                        <span className="truncate">Insumos ({filteredSupplies.length})</span>
                     </TabsTrigger>
                 </TabsList>
 
@@ -302,7 +302,7 @@ export default function ExpensesPage() {
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
                             <Input
                                 placeholder="Buscar por proveedor, insumo o #..."
-                                className="pl-9 bg-[#F2EDE4] border-none"
+                            className="pl-9 h-11 bg-[#F2EDE4] border-none"
                                 value={expenseSearch}
                                 onChange={(e) => setExpenseSearch(e.target.value)}
                             />
@@ -313,7 +313,7 @@ export default function ExpensesPage() {
                                 value={dateFilter}
                                 onValueChange={(v) => setDateFilter(v as DateFilter)}
                             >
-                                <SelectTrigger className="w-full sm:w-[160px] bg-[#F2EDE4] border-none h-10">
+                            <SelectTrigger className="w-full sm:w-[160px] bg-[#F2EDE4] border-none h-11">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className="bg-white">
@@ -323,7 +323,7 @@ export default function ExpensesPage() {
                                 </SelectContent>
                             </Select>
                             <Button
-                                className="bg-[#F24452] hover:bg-[#F23D3D] text-white shrink-0"
+                                className="bg-[#F24452] hover:bg-[#F23D3D] text-white shrink-0 touch-target"
                                 onClick={() => handleOpenExpenseForm()}
                             >
                                 <Plus className="h-4 w-4 mr-1.5" />
@@ -350,13 +350,13 @@ export default function ExpensesPage() {
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
                             <Input
                                 placeholder="Buscar proveedor..."
-                                className="pl-9 bg-[#F2EDE4] border-none"
+                                className="pl-9 h-11 bg-[#F2EDE4] border-none"
                                 value={supplierSearch}
                                 onChange={(e) => setSupplierSearch(e.target.value)}
                             />
                         </div>
                         <Button
-                            className="bg-[#F24452] hover:bg-[#F23D3D] text-white shrink-0"
+                            className="bg-[#F24452] hover:bg-[#F23D3D] text-white shrink-0 touch-target"
                             onClick={() => handleOpenSupplierForm()}
                         >
                             <Plus className="h-4 w-4 mr-1.5" />
@@ -378,13 +378,13 @@ export default function ExpensesPage() {
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
                             <Input
                                 placeholder="Buscar insumo..."
-                                className="pl-9 bg-[#F2EDE4] border-none"
+                                className="pl-9 h-11 bg-[#F2EDE4] border-none"
                                 value={supplySearch}
                                 onChange={(e) => setSupplySearch(e.target.value)}
                             />
                         </div>
                         <Button
-                            className="bg-[#F24452] hover:bg-[#F23D3D] text-white shrink-0"
+                            className="bg-[#F24452] hover:bg-[#F23D3D] text-white shrink-0 touch-target"
                             onClick={() => handleOpenSupplyForm()}
                         >
                             <Plus className="h-4 w-4 mr-1.5" />

@@ -52,7 +52,53 @@ export function SupplierTable({
     }
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-[#E5D9D1] overflow-hidden">
+        <>
+            <div className="md:hidden space-y-3">
+                {suppliers.map((supplier) => (
+                    <article
+                        key={supplier.id}
+                        className="rounded-xl border border-[#E5D9D1] bg-white p-4 shadow-sm"
+                    >
+                        <div className="flex items-center gap-2">
+                            <div className="h-8 w-8 rounded-full bg-[#F24452]/10 flex items-center justify-center shrink-0">
+                                <span className="text-xs font-bold text-[#F24452]">
+                                    {supplier.name.charAt(0).toUpperCase()}
+                                </span>
+                            </div>
+                            <div className="min-w-0">
+                                <p className="font-medium truncate">{supplier.name}</p>
+                                {supplier.contactInfo && (
+                                    <p className="text-xs text-gray-500 whitespace-pre-line line-clamp-2">
+                                        {supplier.contactInfo}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-1 mt-3">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-10 w-10 text-gray-500 hover:text-[#262626] hover:bg-[#F2EDE4]"
+                                onClick={() => onEdit(supplier)}
+                                title="Editar"
+                            >
+                                <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-10 w-10 text-gray-500 hover:text-[#F23D3D] hover:bg-[#F24452]/10"
+                                onClick={() => onDelete(supplier.id)}
+                                title="Eliminar"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </article>
+                ))}
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-[#E5D9D1] overflow-hidden hidden md:block">
             <Table>
                 <TableHeader className="bg-gradient-to-r from-[#F2EDE4] to-[#F8F4F0]">
                     <TableRow className="border-b border-[#E5D9D1] hover:bg-transparent">
@@ -124,5 +170,6 @@ export function SupplierTable({
                 </TableBody>
             </Table>
         </div>
+        </>
     );
 }

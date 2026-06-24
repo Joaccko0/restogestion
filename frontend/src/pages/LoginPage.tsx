@@ -78,20 +78,20 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-[#F2EDE4] to-[#E5D9D1] p-8">
-            <div className="mx-auto w-full max-w-[400px] space-y-8 bg-white rounded-2xl shadow-2xl p-8">
+        <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-[#F2EDE4] to-[#E5D9D1] p-4 sm:p-8">
+            <div className="mx-auto w-full max-w-[420px] space-y-6 sm:space-y-8 bg-white rounded-2xl sm:rounded-3xl shadow-xl border border-white/80 p-5 sm:p-8">
                 
                 {/* Título y descripción */}
                 <div className="flex flex-col space-y-2 text-center">
-                    <div className="flex justify-center mb-4">
+                    <div className="flex justify-center mb-2 sm:mb-4">
                         <img
                             src="/restogestion-logo.png"
                             alt="RestoGestion"
-                            className="h-20 w-auto object-contain"
+                            className="h-16 sm:h-20 w-auto object-contain"
                         />
                     </div>
-                    <h1 className="text-3xl font-bold tracking-tight">Bienvenido de nuevo</h1>
-                    <p className="text-sm text-muted-foreground">
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Bienvenido de nuevo</h1>
+                    <p className="text-sm text-muted-foreground px-2">
                         Ingresa tus credenciales para acceder al panel.
                     </p>
                 </div>
@@ -104,7 +104,7 @@ export default function LoginPage() {
                 )}
 
                 {/* Campos de email y contraseña */}
-                <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+                <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6" noValidate>
                     <div className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="email">Correo Electrónico</Label>
@@ -114,11 +114,12 @@ export default function LoginPage() {
                                     id="email" 
                                     type="email" 
                                     placeholder="nombre@ejemplo.com" 
-                                    className="pl-10 h-11"
+                                    className="pl-10 h-12 text-base"
                                     value={email}
                                     onChange={handleEmailValidation}
                                     required
                                     disabled={isLoading}
+                                    autoComplete="email"
                                 />
                             </div>
                         </div>
@@ -132,14 +133,15 @@ export default function LoginPage() {
                             </div>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input 
+                                <Input
                                     id="password" 
                                     type="password" 
-                                    className="pl-10 h-11"
+                                    className="pl-10 h-12 text-base"
                                     value={password}
                                     onChange={handlePasswordValidation}
                                     required
                                     disabled={isLoading}
+                                    autoComplete="current-password"
                                 />
                             </div>
                         </div>
@@ -147,7 +149,7 @@ export default function LoginPage() {
 
                     {/* Botón: deshabilita y muestra spinner durante login */}
                     <Button 
-                        className="w-full h-11 font-bold text-base bg-[#F24452] hover:bg-[#F23D3D] active:bg-[#E03333] text-white transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed" 
+                        className="w-full h-12 font-bold text-base bg-[#F24452] hover:bg-[#F23D3D] active:bg-[#E03333] text-white transition-all duration-200 shadow-md disabled:opacity-70 disabled:cursor-not-allowed" 
                         type="submit" 
                         disabled={isLoading}
                     >

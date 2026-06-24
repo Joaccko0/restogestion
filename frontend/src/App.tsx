@@ -59,7 +59,7 @@ function App() {
 
                     <Route path="*" element={<Navigate to="/dashboard" />} />
                 </Routes>
-                <Toaster position="bottom-right" richColors />
+                <Toaster position="top-center" richColors />
             </AuthProvider>
         </BrowserRouter>
     );

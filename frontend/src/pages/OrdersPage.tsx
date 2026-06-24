@@ -94,12 +94,11 @@ export default function OrdersPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#F2EDE4] to-[#E5D9D1] p-6">
-            <div className="max-w-[1800px] mx-auto space-y-6">
+        <div className="app-page">
                 {/* Header */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
-                        <h1 className="text-3xl font-bold text-[#0D0D0D]">
+                        <h1 className="text-2xl sm:text-3xl font-bold text-[#0D0D0D]">
                             Pedidos
                         </h1>
                         <p className="text-sm text-[#262626] mt-1">
@@ -107,12 +106,12 @@ export default function OrdersPage() {
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                         <Button
                             variant="outline"
                             size="sm"
                             onClick={() => setShowDeliveryFeeDialog(true)}
-                            className="border-[#E5D9D1] text-gray-600"
+                            className="border-[#E5D9D1] text-gray-600 touch-target"
                         >
                             <Truck className="w-4 h-4 mr-1.5" />
                             Delivery ${currentBusiness?.deliveryFee ?? 0}
@@ -122,7 +121,7 @@ export default function OrdersPage() {
                             size="sm"
                             onClick={loadOrders}
                             disabled={loading}
-                            className="border-[#E5D9D1]"
+                            className="border-[#E5D9D1] touch-target"
                         >
                             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                             Actualizar
@@ -131,7 +130,7 @@ export default function OrdersPage() {
                             size="sm"
                             onClick={() => setShowCreateDialog(true)}
                             disabled={!openCashShift}
-                            className="bg-[#F24452] hover:bg-[#F23D3D] disabled:opacity-50"
+                            className="bg-[#F24452] hover:bg-[#F23D3D] disabled:opacity-50 touch-target"
                         >
                             <Plus className="w-4 h-4 mr-2" />
                             Nuevo Pedido
@@ -164,7 +163,6 @@ export default function OrdersPage() {
                         />
                     )
                 ) : null}
-            </div>
 
             {/* Dialogs */}
             <OrderDetailsDialog

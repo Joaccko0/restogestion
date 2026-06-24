@@ -11,7 +11,7 @@ export default function OrdersHistoryPage() {
     );
 
     return (
-        <div className="space-y-6">
+        <div className="app-page">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-[#262626] flex items-center gap-2">
@@ -28,7 +28,7 @@ export default function OrdersHistoryPage() {
                     size="sm"
                     onClick={() => void loadOrdersHistoric()}
                     disabled={loading}
-                    className="border-[#E5D9D1] text-gray-600 hover:bg-[#F2EDE4] shrink-0 self-start sm:self-auto"
+                    className="border-[#E5D9D1] text-gray-600 hover:bg-[#F2EDE4] shrink-0 self-start sm:self-auto touch-target"
                 >
                     <RefreshCw className={`w-4 h-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
                     Actualizar

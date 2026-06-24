@@ -33,7 +33,7 @@ export function KanbanColumn({ status, orders, onOrderClick, onMarkPaid }: Kanba
     const orderIds = orders.map((o) => o.id.toString());
 
     return (
-        <div className="flex-1 min-w-[300px] max-w-[360px] flex flex-col">
+        <div className="flex-1 min-w-[86vw] sm:min-w-[300px] max-w-[92vw] sm:max-w-[360px] flex flex-col snap-start">
             <div className="relative mb-3 overflow-hidden rounded-xl border border-[#E5D9D1] bg-white shadow-sm">
                 <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#F24452]/70" />
                 <div className="flex items-center justify-between pl-4 pr-3 py-3">
@@ -50,7 +50,7 @@ export function KanbanColumn({ status, orders, onOrderClick, onMarkPaid }: Kanba
             <div
                 ref={setNodeRef}
                 className={cn(
-                    'flex-1 space-y-3 min-h-[520px] p-2.5 rounded-xl border-2 border-dashed border-[#E5D9D1] bg-[#F2EDE4]/30 transition-colors',
+                    'flex-1 space-y-3 min-h-[320px] sm:min-h-[520px] p-2.5 rounded-xl border-2 border-dashed border-[#E5D9D1] bg-[#F2EDE4]/30 transition-colors',
                     isOver && 'border-[#F24452]/40 bg-[#F2EDE4]/60'
                 )}
             >

@@ -93,28 +93,33 @@ export function KanbanBoard({ orders, onOrderClick, onStatusChange, onMarkPaid }
     };
 
     return (
-        <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-        >
-            <div className="flex gap-4 overflow-x-auto pb-4">
-                {KANBAN_STATUSES.map(status => (
-                    <KanbanColumn
-                        key={status}
-                        status={status}
-                        orders={ordersByStatus[status]}
-                        onOrderClick={onOrderClick}
-                        onMarkPaid={onMarkPaid}
-                    />
-                ))}
-            </div>
+        <div className="space-y-3">
+            <p className="md:hidden text-xs text-gray-600">
+                Deslizá para ver columnas y arrastrá pedidos para cambiar de estado.
+            </p>
+            <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+            >
+                <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 snap-x snap-mandatory">
+                    {KANBAN_STATUSES.map(status => (
+                        <KanbanColumn
+                            key={status}
+                            status={status}
+                            orders={ordersByStatus[status]}
+                            onOrderClick={onOrderClick}
+                            onMarkPaid={onMarkPaid}
+                        />
+                    ))}
+                </div>
 
-            {/* Overlay para mostrar la tarjeta mientras se arrastra */}
-            <DragOverlay>
-                {activeOrder && <OrderCard order={activeOrder} isDragging />}
-            </DragOverlay>
-        </DndContext>
+                {/* Overlay para mostrar la tarjeta mientras se arrastra */}
+                <DragOverlay>
+                    {activeOrder && <OrderCard order={activeOrder} isDragging />}
+                </DragOverlay>
+            </DndContext>
+            </div>
     );
 }

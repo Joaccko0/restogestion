@@ -3,6 +3,18 @@
 
 /* Estilos globales consistentes */
 @layer base {
+  :root {
+    --app-bg: #F8F4EF;
+  }
+
+  html, body, #root {
+    min-height: 100%;
+  }
+
+  body {
+    @apply bg-[var(--app-bg)] text-[#262626] antialiased;
+  }
+
   /* Tipografía */
   h1, h2, h3, h4, h5, h6 {
     @apply font-semibold text-gray-dark;
@@ -13,27 +25,45 @@
   h3 { @apply text-xl; }
   h4 { @apply text-lg; }
   
-  /* Scrollbar personalizado */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  
-  ::-webkit-scrollbar-track {
-    background: var(--cream);
-  }
-  
-  ::-webkit-scrollbar-thumb {
-    background: var(--cream-dark);
-    border-radius: 4px;
-  }
-  
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--gray-dark);
+  @media (min-width: 768px) {
+    /* Scrollbar personalizado en desktop */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: var(--cream);
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: var(--cream-dark);
+      border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--gray-dark);
+    }
   }
 }
 
 @layer utilities {
+  .app-page {
+    @apply mx-auto w-full max-w-[1600px] space-y-4 sm:space-y-6;
+  }
+
+  .mobile-safe-bottom {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
+  }
+
+  .mobile-bottom-nav-offset {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 6rem);
+  }
+
+  .touch-target {
+    min-height: 44px;
+  }
+
   .transition-smooth {
     @apply transition-all duration-200 ease-in-out;
   }

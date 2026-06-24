@@ -102,8 +102,8 @@ function PieChart({
     let cumulative = 0;
 
     return (
-        <div className="flex flex-col md:flex-row gap-6 items-center">
-            <svg viewBox="0 0 200 200" className="w-52 h-52 shrink-0">
+        <div className="flex flex-col md:flex-row gap-4 sm:gap-6 items-center">
+            <svg viewBox="0 0 200 200" className="w-44 h-44 sm:w-52 sm:h-52 shrink-0">
                 {data.map((slice, index) => {
                     const startAngle = (cumulative / total) * 360;
                     cumulative += slice.value;
@@ -410,7 +410,7 @@ export default function StatsPage() {
     const netIncome = stats.totalRevenue - expenseStats.totalExpenses;
 
     return (
-        <div className="space-y-6">
+        <div className="app-page">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-[#262626] flex items-center gap-2">
@@ -426,7 +426,7 @@ export default function StatsPage() {
                     size="sm"
                     onClick={() => void loadOrdersHistoric()}
                     disabled={loading}
-                    className="border-[#E5D9D1] shrink-0 self-start"
+                    className="border-[#E5D9D1] shrink-0 self-start touch-target"
                 >
                     <RefreshCw className={`w-4 h-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
                     Actualizar
@@ -443,7 +443,7 @@ export default function StatsPage() {
                                 type="date"
                                 value={filterDateFrom}
                                 onChange={(e) => setFilterDateFrom(e.target.value)}
-                                className="bg-[#F2EDE4] border-none"
+                                className="bg-[#F2EDE4] border-none h-11"
                             />
                         </div>
                         <div className="space-y-1.5">
@@ -453,7 +453,7 @@ export default function StatsPage() {
                                 type="date"
                                 value={filterDateTo}
                                 onChange={(e) => setFilterDateTo(e.target.value)}
-                                className="bg-[#F2EDE4] border-none"
+                                className="bg-[#F2EDE4] border-none h-11"
                             />
                         </div>
                         {(filterDateFrom || filterDateTo) && (
@@ -496,7 +496,7 @@ export default function StatsPage() {
                         </div>
                     )}
 
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <StatCard
                             icon={TrendingUp}
                             title="Ventas totales"
@@ -746,14 +746,14 @@ function StatCard({
 
     return (
         <Card className="bg-white border-[#E5D9D1]">
-            <CardContent className="p-5">
+            <CardContent className="p-4 sm:p-5">
                 <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-500">{title}</span>
                     <div className="p-1.5 rounded-lg bg-[#F2EDE4]">
                         <Icon className="h-4 w-4 text-[#F24452]" />
                     </div>
                 </div>
-                <p className={`text-xl font-bold tabular-nums ${valueColor}`}>{value}</p>
+                <p className={`text-lg sm:text-xl font-bold tabular-nums ${valueColor}`}>{value}</p>
                 {subtitle && <p className="text-xs text-gray-400 mt-1">{subtitle}</p>}
             </CardContent>
         </Card>
