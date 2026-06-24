@@ -8,6 +8,7 @@ Monorepo con **backend Spring Boot** (`backend/`) y **frontend React + Vite + Ty
 |-----|------------------------|
 | Desarrollador nuevo en el repo | [SETUP_AND_RUN.md](./SETUP_AND_RUN.md), luego [ARCHITECTURE.md](./ARCHITECTURE.md) |
 | Integración frontend ↔ API | [API_REFERENCE.md](./API_REFERENCE.md), [FRONTEND.md](./FRONTEND.md) |
+| UX/UI responsive mobile | [responsive-frontend/README.md](./responsive-frontend/README.md) |
 | Modelo de datos y reglas | [DOMAIN_MODEL.md](./DOMAIN_MODEL.md) |
 | Seguridad y multi-tenant | [AUTH_AND_MULTITENANCY.md](./AUTH_AND_MULTITENANCY.md) |
 | Migraciones PostgreSQL / deploy | [MIGRATIONS.md](./MIGRATIONS.md) |
