@@ -147,7 +147,7 @@ export default function CustomersPage() {
                         placeholder="Buscar por nombre o teléfono..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-9 h-11 bg-[#F2EDE4] border-none focus-visible:ring-0 focus:border-[#F24452]"
+                        className="pl-9 pr-3 h-11 bg-[#F2EDE4] border-none focus-visible:ring-0 focus:border-[#F24452]"
                     />
                 </div>
             </div>

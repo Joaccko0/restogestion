@@ -159,7 +159,7 @@ export default function ProductsPage() {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                             <Input
                                 placeholder="Buscar producto..."
-                            className="pl-9 h-11 bg-[#F2EDE4] border-none"
+                                className="pl-9 pr-3 h-11 bg-[#F2EDE4] border-none"
                                 value={productSearchTerm}
                                 onChange={(e) => setProductSearchTerm(e.target.value)}
                             />
@@ -203,7 +203,7 @@ export default function ProductsPage() {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                             <Input
                                 placeholder="Buscar combo..."
-                                className="pl-9 h-11 bg-[#F2EDE4] border-none"
+                                className="pl-9 pr-3 h-11 bg-[#F2EDE4] border-none"
                                 value={comboSearchTerm}
                                 onChange={(e) => setComboSearchTerm(e.target.value)}
                             />

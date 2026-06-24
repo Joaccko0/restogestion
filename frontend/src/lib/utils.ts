@@ -8,14 +8,14 @@ export function cn(...inputs: ClassValue[]) {
  * Formatea un número como moneda en formato latino: $ 1.000.000,99
  */
 export function formatCurrency(value: number | null | undefined): string {
-  if (value === null || value === undefined) return '$ 0,00';
+  if (value === null || value === undefined) return '$\u00A00,00';
   
   const formatted = new Intl.NumberFormat('es-AR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value);
   
-  return `$ ${formatted}`;
+  return `$\u00A0${formatted}`;
 }
 
 /**

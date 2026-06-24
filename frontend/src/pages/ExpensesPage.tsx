@@ -302,7 +302,7 @@ export default function ExpensesPage() {
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
                             <Input
                                 placeholder="Buscar por proveedor, insumo o #..."
-                            className="pl-9 h-11 bg-[#F2EDE4] border-none"
+                                className="pl-9 pr-3 h-11 bg-[#F2EDE4] border-none"
                                 value={expenseSearch}
                                 onChange={(e) => setExpenseSearch(e.target.value)}
                             />
@@ -350,7 +350,7 @@ export default function ExpensesPage() {
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
                             <Input
                                 placeholder="Buscar proveedor..."
-                                className="pl-9 h-11 bg-[#F2EDE4] border-none"
+                                className="pl-9 pr-3 h-11 bg-[#F2EDE4] border-none"
                                 value={supplierSearch}
                                 onChange={(e) => setSupplierSearch(e.target.value)}
                             />
@@ -378,7 +378,7 @@ export default function ExpensesPage() {
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
                             <Input
                                 placeholder="Buscar insumo..."
-                                className="pl-9 h-11 bg-[#F2EDE4] border-none"
+                                className="pl-9 pr-3 h-11 bg-[#F2EDE4] border-none"
                                 value={supplySearch}
                                 onChange={(e) => setSupplySearch(e.target.value)}
                             />

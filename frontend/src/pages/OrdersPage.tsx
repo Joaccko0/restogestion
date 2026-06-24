@@ -15,6 +15,7 @@ import { useCustomers } from '../hooks/useCustomers';
 import { useCashShift } from '../hooks/useCashShift';
 import { useMenuCategories } from '../hooks/useMenuCategories';
 import { KanbanBoard } from '../components/KanbanBoard';
+import { MobileOrdersBoard } from '../components/MobileOrdersBoard';
 import { OrderDetailsDialog } from '../components/OrderDetailsDialog';
 import { CreateOrderDialog } from '../components/CreateOrderDialog';
 import { CashShiftStatus } from '../components/CashShiftStatus';
@@ -155,12 +156,22 @@ export default function OrdersPage() {
                             </div>
                         </div>
                     ) : (
-                        <KanbanBoard
-                            orders={orders}
-                            onOrderClick={handleOrderClick}
-                            onStatusChange={handleStatusChange}
-                            onMarkPaid={handleMarkPaid}
-                        />
+                        <>
+                            <MobileOrdersBoard
+                                orders={orders}
+                                onOrderClick={handleOrderClick}
+                                onStatusChange={handleStatusChange}
+                                onMarkPaid={handleMarkPaid}
+                            />
+                            <div className="hidden md:block">
+                                <KanbanBoard
+                                    orders={orders}
+                                    onOrderClick={handleOrderClick}
+                                    onStatusChange={handleStatusChange}
+                                    onMarkPaid={handleMarkPaid}
+                                />
+                            </div>
+                        </>
                     )
                 ) : null}
 

@@ -216,7 +216,7 @@ export function OrdersHistoryView({ orders, loading = false, cashShifts = [] }: 
                                         type="date"
                                         value={filterDateFrom}
                                         onChange={(e) => setFilterDateFrom(e.target.value)}
-                                        className="pl-10 h-11 bg-[#F2EDE4] border-none"
+                                        className="pl-10 pr-3 h-11 bg-[#F2EDE4] border-none"
                                     />
                                 </div>
                             </div>
@@ -231,7 +231,7 @@ export function OrdersHistoryView({ orders, loading = false, cashShifts = [] }: 
                                         type="date"
                                         value={filterDateTo}
                                         onChange={(e) => setFilterDateTo(e.target.value)}
-                                        className="pl-10 h-11 bg-[#F2EDE4] border-none"
+                                        className="pl-10 pr-3 h-11 bg-[#F2EDE4] border-none"
                                     />
                                 </div>
                             </div>
@@ -246,7 +246,7 @@ export function OrdersHistoryView({ orders, loading = false, cashShifts = [] }: 
                                         placeholder="Nombre..."
                                         value={filterCustomer}
                                         onChange={(e) => setFilterCustomer(e.target.value)}
-                                        className="pl-10 h-11 bg-[#F2EDE4] border-none"
+                                        className="pl-10 pr-3 h-11 bg-[#F2EDE4] border-none"
                                     />
                                 </div>
                             </div>
@@ -417,7 +417,7 @@ export function OrdersHistoryView({ orders, loading = false, cashShifts = [] }: 
                                                 Caja {order.cashShiftId ?? '—'} · {dateDisplay} {orderTimeDisplay}
                                             </p>
                                         </div>
-                                        <p className="text-lg font-bold text-[#262626] tabular-nums">
+                                        <p className="text-base font-bold text-[#262626] tabular-nums whitespace-nowrap shrink-0">
                                             {formatCurrency(Number.isFinite(totalValue) ? totalValue : 0)}
                                         </p>
                                     </div>
@@ -536,7 +536,7 @@ export function OrdersHistoryView({ orders, loading = false, cashShifts = [] }: 
                                                     ? PaymentMethodLabels[order.paymentMethod]
                                                     : '—'}
                                             </TableCell>
-                                            <TableCell className="text-right font-semibold text-[#262626] tabular-nums">
+                                            <TableCell className="text-right font-semibold text-[#262626] tabular-nums whitespace-nowrap">
                                                 {formatCurrency(
                                                     Number.isFinite(totalValue) ? totalValue : 0
                                                 )}
