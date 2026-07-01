@@ -189,7 +189,7 @@ export function CreateOrderDialog({
                     <DialogTitle>Nuevo Pedido</DialogTitle>
                 </DialogHeader>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 flex-1 overflow-hidden px-4 sm:px-6 py-4 sm:py-5">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 flex-1 overflow-y-auto lg:overflow-hidden px-4 sm:px-6 py-4 sm:py-5">
                     {/* Columna izquierda: Productos y combos */}
                     <ScrollArea className="max-h-[45vh] lg:max-h-[620px] lg:pr-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -252,7 +252,7 @@ export function CreateOrderDialog({
                     </ScrollArea>
 
                     {/* Columna derecha: Carrito y opciones */}
-                    <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-4 pb-2">
                         {/* Carrito */}
                         <div className="flex-1 border-2 border-[#E5D9D1] rounded-lg p-3 overflow-y-auto min-h-[180px]">
                             <h4 className="font-semibold text-sm mb-2">Carrito ({cart.length})</h4>

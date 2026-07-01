@@ -457,7 +457,7 @@ export function CustomerAddressSelector({
                     </div>
                 )}
 
-                <div className="flex-1 overflow-hidden px-6 py-4 space-y-4">
+                <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
                     {isDelivery && (
                         /* Selector de modo: cliente vs manual */
                         <div className="grid grid-cols-2 gap-3">
@@ -599,7 +599,7 @@ export function CustomerAddressSelector({
                                         </p>
                                     </div>
 
-                                    <ScrollArea className="h-[300px] pr-1">
+                                    <ScrollArea className="max-h-[42vh] sm:max-h-[300px] pr-1">
                                         <div className="space-y-2.5">
                                             {filteredCustomers.length === 0 ? (
                                                 <div className="flex flex-col items-center justify-center py-10 px-4 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50/50">
@@ -863,7 +863,7 @@ export function CustomerAddressSelector({
                                     }}
                                 />
                             ) : (
-                                <ScrollArea className="h-[280px]">
+                                <ScrollArea className="max-h-[42vh] sm:max-h-[280px]">
                                     <div className="space-y-2">
                                         {filteredCustomers.map((customer) => (
                                             <button
@@ -903,14 +903,14 @@ export function CustomerAddressSelector({
                     )}
                 </div>
 
-                <DialogFooter className="px-6 py-4 border-t border-gray-100 bg-gray-50/50">
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>
+                <DialogFooter className="px-4 sm:px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+                    <Button variant="outline" onClick={() => onOpenChange(false)} className="touch-target">
                         Cancelar
                     </Button>
                     <Button
                         onClick={handleConfirm}
                         disabled={isDelivery && !deliveryReady}
-                        className="bg-[#F24452] hover:bg-[#d93a48] min-w-[140px] font-semibold"
+                        className="bg-[#F24452] hover:bg-[#d93a48] min-w-[140px] font-semibold touch-target"
                     >
                         {isDelivery ? 'Confirmar destino' : 'Confirmar'}
                     </Button>
