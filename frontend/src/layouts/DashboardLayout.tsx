@@ -196,6 +196,7 @@ export default function DashboardLayout() {
                         </div>
                     )}
                     <Outlet /> {/* <-- AQUÍ VA LO QUE CAMBIA (Productos, Dashboard, etc) */}
+                    <div className="md:hidden h-24" />
                 </main>
             </div>
 

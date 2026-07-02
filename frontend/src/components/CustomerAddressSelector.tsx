@@ -287,7 +287,6 @@ export function CustomerAddressSelector({
                             value={newCustomerName}
                             onChange={(e) => setNewCustomerName(e.target.value)}
                             className={cn(FIELD, 'pl-10')}
-                            autoFocus
                         />
                     </div>
                 </div>
@@ -347,7 +346,6 @@ export function CustomerAddressSelector({
                         value={newAddressStreet}
                         onChange={(e) => setNewAddressStreet(e.target.value)}
                         className={FIELD}
-                        autoFocus
                     />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -545,7 +543,6 @@ export function CustomerAddressSelector({
                                 value={manualAddress}
                                 onChange={(e) => setManualAddress(e.target.value)}
                                 className={cn(FIELD, 'h-11 text-base')}
-                                autoFocus
                             />
                             <p className="text-xs text-gray-500">
                                 Tip: incluí piso, departamento o referencias para el delivery.
