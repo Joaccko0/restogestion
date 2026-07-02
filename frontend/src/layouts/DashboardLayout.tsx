@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button';
 export default function DashboardLayout() {
     const { logout } = useAuth();
     const navigate = useNavigate();
-    const { currentBusiness } = useBusiness();
+    const { currentBusiness, isLoading } = useBusiness();
     const location = useLocation(); // Para saber en qué ruta estamos y pintarla de color
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -123,7 +123,7 @@ export default function DashboardLayout() {
                     <div className="min-w-0">
                         <p className="text-xs text-gray-500">Negocio activo</p>
                         <p className="text-sm font-semibold text-[#262626] truncate">
-                            {currentBusiness?.name || 'Cargando...'}
+                            {isLoading ? 'Cargando...' : currentBusiness?.name || 'Sin negocio'}
                         </p>
                     </div>
                     <Button
@@ -173,7 +173,7 @@ export default function DashboardLayout() {
                 )}
 
                 {/* ÁREA DE CONTENIDO (Aquí se renderizan las páginas) */}
-                <main className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6 md:p-8 mobile-bottom-nav-offset md:pb-8">
+                <main className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6 md:p-8 md:pb-8">
                     {currentBusiness?.billingStatus === 'VENCIDO' && (
                         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                             Suscripción vencida. Solo puedes consultar estadísticas.
@@ -196,12 +196,11 @@ export default function DashboardLayout() {
                         </div>
                     )}
                     <Outlet /> {/* <-- AQUÍ VA LO QUE CAMBIA (Productos, Dashboard, etc) */}
-                    <div className="md:hidden h-24" />
                 </main>
             </div>
 
             {/* Bottom nav mobile */}
-            <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-[#E5D9D1] bg-white/95 backdrop-blur px-2 py-2 mobile-safe-bottom">
+            <nav className="md:hidden shrink-0 z-40 border-t border-[#E5D9D1] bg-white/95 backdrop-blur px-2 py-2 mobile-safe-bottom">
                 <div className="grid grid-cols-5 gap-1">
                     {mobileQuickNav.map((item) => {
                         const Icon = item.icon;

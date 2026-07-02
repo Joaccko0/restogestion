@@ -15,7 +15,7 @@ const BusinessContext = createContext<BusinessContextType | undefined>(undefined
  * Carga el negocio actual desde GET /api/me/businesses (primer negocio del usuario; piloto 1 cliente).
  */
 export const BusinessProvider = ({ children }: { children: ReactNode }) => {
-    const { token, isAuthenticated } = useAuth();
+    const { token, isAuthenticated, logout } = useAuth();
     const [currentBusiness, setCurrentBusiness] = useState<BusinessSummary | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -37,8 +37,13 @@ export const BusinessProvider = ({ children }: { children: ReactNode }) => {
                 }
             } catch (error) {
                 console.error('Error cargando negocios del usuario', error);
+                const status = (error as { response?: { status?: number } })?.response?.status;
                 if (!cancelled) {
                     setCurrentBusiness(null);
+                    // Si la sesión/permiso no es válido, cerrar sesión para evitar UI rota.
+                    if (status === 401 || status === 403) {
+                        logout();
+                    }
                 }
             } finally {
                 if (!cancelled) {
@@ -52,7 +57,7 @@ export const BusinessProvider = ({ children }: { children: ReactNode }) => {
         return () => {
             cancelled = true;
         };
-    }, [token, isAuthenticated]);
+    }, [token, isAuthenticated, logout]);
 
     const refreshBusiness = async () => {
         if (!isAuthenticated || !token) return;
