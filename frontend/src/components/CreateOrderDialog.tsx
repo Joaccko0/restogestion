@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Minus, Trash2, User, MapPin, AlertCircle } from 'lucide-react';
+import { Plus, Minus, Trash2, User, MapPin, AlertCircle, Search } from 'lucide-react';
 import type { Product, Combo } from '../types/inventory.types';
 import type { CreateOrderRequest, OrderItemRequest, PaymentMethod, DeliveryMethod } from '../types/order.types';
 import type { Customer } from '../types/customer.types';
@@ -46,6 +46,9 @@ interface CartItem {
     quantity: number;
 }
 
+const ALL_CATEGORIES = 'ALL';
+type ProductSort = 'title-asc' | 'price-asc' | 'price-desc';
+
 /**
  * Dialog para crear nuevo pedido
  */
@@ -69,6 +72,10 @@ export function CreateOrderDialog({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showCustomerAddressDialog, setShowCustomerAddressDialog] = useState(false);
     const [deliveryFeeInput, setDeliveryFeeInput] = useState('');
+    const [itemSearchTerm, setItemSearchTerm] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState<string>(ALL_CATEGORIES);
+    const [showOnlyActive, setShowOnlyActive] = useState(true);
+    const [productSort, setProductSort] = useState<ProductSort>('title-asc');
 
     const selectedCustomer = customers.find((c) => c.id === selectedCustomerId);
     const selectedAddress = useMemo(() => {
@@ -76,6 +83,42 @@ export function CreateOrderDialog({
         const customer = customers.find(c => c.id === selectedCustomerId);
         return customer?.addresses.find(a => a.id === selectedAddressId);
     }, [selectedCustomerId, selectedAddressId, customers]);
+
+    const categoryOptions = useMemo(() => {
+        const unique = Array.from(new Set(products.map((p) => p.category).filter(Boolean)));
+        return unique.sort((a, b) => a.localeCompare(b, 'es'));
+    }, [products]);
+
+    const filteredProducts = useMemo(() => {
+        const term = itemSearchTerm.trim().toLowerCase();
+
+        const list = products.filter((product) => {
+            if (showOnlyActive && !product.active) return false;
+            if (categoryFilter !== ALL_CATEGORIES && product.category !== categoryFilter) return false;
+            if (!term) return true;
+            return (
+                product.title.toLowerCase().includes(term) ||
+                (product.description || '').toLowerCase().includes(term)
+            );
+        });
+
+        return list.sort((a, b) => {
+            if (productSort === 'price-asc') return a.price - b.price;
+            if (productSort === 'price-desc') return b.price - a.price;
+            return a.title.localeCompare(b.title, 'es');
+        });
+    }, [products, itemSearchTerm, showOnlyActive, categoryFilter, productSort]);
+
+    const filteredCombos = useMemo(() => {
+        const term = itemSearchTerm.trim().toLowerCase();
+        return combos
+            .filter((combo) => {
+                if (showOnlyActive && !combo.active) return false;
+                if (!term) return true;
+                return combo.name.toLowerCase().includes(term);
+            })
+            .sort((a, b) => a.name.localeCompare(b.name, 'es'));
+    }, [combos, itemSearchTerm, showOnlyActive]);
 
     // Resetear al abrir
     useEffect(() => {
@@ -88,6 +131,10 @@ export function CreateOrderDialog({
             setManualAddress('');
             setShowCustomerAddressDialog(false);
             setDeliveryFeeInput(deliveryFee > 0 ? String(deliveryFee) : '');
+            setItemSearchTerm('');
+            setCategoryFilter(ALL_CATEGORIES);
+            setShowOnlyActive(true);
+            setProductSort('title-asc');
         }
     }, [open, deliveryFee]);
 
@@ -191,13 +238,75 @@ export function CreateOrderDialog({
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 flex-1 overflow-y-auto lg:overflow-hidden px-4 sm:px-6 py-4 sm:py-5">
                     {/* Columna izquierda: Productos y combos */}
-                    <ScrollArea className="max-h-[45vh] lg:max-h-[620px] lg:pr-4">
+                    <div className="space-y-3">
+                        <div className="rounded-lg border border-[#E5D9D1] bg-[#F8F4EF] p-3 space-y-2.5">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                <Input
+                                    placeholder="Buscar producto o combo..."
+                                    value={itemSearchTerm}
+                                    onChange={(e) => setItemSearchTerm(e.target.value)}
+                                    className="pl-9 h-10 bg-white border-[#E5D9D1]"
+                                />
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                                    <SelectTrigger className="h-10 bg-white border-[#E5D9D1]">
+                                        <SelectValue placeholder="Categoría" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-white border border-[#E5D9D1]">
+                                        <SelectItem value={ALL_CATEGORIES}>Todas las categorías</SelectItem>
+                                        {categoryOptions.map((category) => (
+                                            <SelectItem key={category} value={category}>
+                                                {category}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <Select
+                                    value={productSort}
+                                    onValueChange={(value) => setProductSort(value as ProductSort)}
+                                >
+                                    <SelectTrigger className="h-10 bg-white border-[#E5D9D1]">
+                                        <SelectValue placeholder="Orden" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-white border border-[#E5D9D1]">
+                                        <SelectItem value="title-asc">A-Z</SelectItem>
+                                        <SelectItem value="price-asc">Precio: menor a mayor</SelectItem>
+                                        <SelectItem value="price-desc">Precio: mayor a menor</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="flex justify-end">
+                                <Button
+                                    type="button"
+                                    variant={showOnlyActive ? 'default' : 'outline'}
+                                    className={`h-9 text-xs sm:text-sm ${
+                                        showOnlyActive
+                                            ? 'bg-[#F24452] hover:bg-[#F23D3D] text-white'
+                                            : 'border-[#E5D9D1]'
+                                    }`}
+                                    onClick={() => setShowOnlyActive((prev) => !prev)}
+                                >
+                                    {showOnlyActive ? 'Solo activos' : 'Ver activos e inactivos'}
+                                </Button>
+                            </div>
+                        </div>
+
+                        <ScrollArea className="max-h-[45vh] lg:max-h-[620px] lg:pr-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {/* Productos */}
                             <div>
-                                <h4 className="font-semibold text-sm mb-2">Productos</h4>
+                                <h4 className="font-semibold text-sm mb-2">
+                                    Productos ({filteredProducts.length})
+                                </h4>
                                 <div className="space-y-2">
-                                    {products.filter(p => p.active).map(product => (
+                                    {filteredProducts.length === 0 && (
+                                        <p className="text-xs text-gray-500 bg-[#F2EDE4]/60 rounded p-2">
+                                            No hay productos que coincidan con los filtros.
+                                        </p>
+                                    )}
+                                    {filteredProducts.map(product => (
                                         <div
                                             key={product.id}
                                             className="flex items-center justify-between p-2 bg-[#F2EDE4] rounded hover:bg-[#E5D9D1] transition-colors"
@@ -223,9 +332,16 @@ export function CreateOrderDialog({
                             {/* Combos */}
                             {combos.length > 0 && (
                                 <div>
-                                    <h4 className="font-semibold text-sm mb-2">Combos</h4>
+                                    <h4 className="font-semibold text-sm mb-2">
+                                        Combos ({filteredCombos.length})
+                                    </h4>
                                     <div className="space-y-2">
-                                        {combos.filter(c => c.active).map(combo => (
+                                        {filteredCombos.length === 0 && (
+                                            <p className="text-xs text-gray-500 bg-[#F2EDE4]/60 rounded p-2">
+                                                No hay combos que coincidan con la búsqueda.
+                                            </p>
+                                        )}
+                                        {filteredCombos.map(combo => (
                                             <div
                                                 key={combo.id}
                                                 className="flex items-center justify-between p-2 bg-[#F2EDE4] rounded hover:bg-[#E5D9D1] transition-colors"
@@ -250,6 +366,7 @@ export function CreateOrderDialog({
                             )}
                         </div>
                     </ScrollArea>
+                    </div>
 
                     {/* Columna derecha: Carrito y opciones */}
                     <div className="flex flex-col gap-4 pb-2">
