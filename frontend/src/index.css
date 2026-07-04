@@ -5,6 +5,7 @@
 @layer base {
   :root {
     --app-bg: #F8F4EF;
+    --mobile-nav-height: 68px;
   }
 
   html, body, #root {
@@ -57,7 +58,18 @@
   }
 
   .mobile-bottom-nav-offset {
-    padding-bottom: calc(env(safe-area-inset-bottom) + 10rem);
+    padding-bottom: 1rem;
+  }
+
+  .mobile-bottom-nav {
+    height: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  @media (max-width: 767px) {
+    .mobile-bottom-nav-offset {
+      padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 1rem);
+    }
   }
 
   .touch-target {
