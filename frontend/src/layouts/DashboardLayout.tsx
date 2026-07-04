@@ -64,7 +64,7 @@ export default function DashboardLayout() {
     const mobileQuickNav = menuItems.slice(0, 5);
 
     return (
-        <div className="flex min-h-screen bg-[#F8F4EF] text-gray-900">
+        <div className="flex flex-col md:flex-row min-h-screen bg-[#F8F4EF] text-gray-900">
             
             {/* --- SIDEBAR (Escritorio) --- */}
             <aside className="hidden md:flex flex-col w-64 bg-white border-r border-[#E5D9D1] shadow-sm">
@@ -120,7 +120,7 @@ export default function DashboardLayout() {
             </aside>
 
             {/* --- CONTENIDO PRINCIPAL --- */}
-            <div className="flex-1 min-h-[100dvh] md:min-h-screen flex flex-col overflow-hidden">
+            <div className="flex-1 h-[100dvh] md:h-auto md:min-h-screen flex flex-col overflow-hidden">
                 
                 {/* Header Móvil (Solo visible en celular) */}
                 <header className="md:hidden sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-white/95 backdrop-blur border-b border-[#E5D9D1] shadow-sm">
@@ -177,7 +177,7 @@ export default function DashboardLayout() {
                 )}
 
                 {/* ÁREA DE CONTENIDO (Aquí se renderizan las páginas) */}
-                <main className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6 md:p-8 md:pb-8 mobile-bottom-nav-offset">
+                <main className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6 md:p-8 md:pb-8">
                     {currentBusiness?.billingStatus === 'VENCIDO' && (
                         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                             Suscripción vencida. Solo puedes consultar estadísticas.
@@ -202,7 +202,7 @@ export default function DashboardLayout() {
                     <Outlet /> {/* <-- AQUÍ VA LO QUE CAMBIA (Productos, Dashboard, etc) */}
                 </main>
                 {/* Bottom nav mobile */}
-                <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-[#E5D9D1] bg-white/95 backdrop-blur px-2 pt-2 mobile-bottom-nav">
+                <nav className="md:hidden shrink-0 z-40 border-t border-[#E5D9D1] bg-white/95 backdrop-blur px-2 pt-2 mobile-bottom-nav">
                     <div className="mx-auto max-w-[720px] grid grid-cols-5 gap-1">
                         {mobileQuickNav.map((item) => {
                             const Icon = item.icon;
