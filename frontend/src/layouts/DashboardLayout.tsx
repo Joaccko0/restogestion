@@ -197,34 +197,33 @@ export default function DashboardLayout() {
                     )}
                     <Outlet /> {/* <-- AQUÍ VA LO QUE CAMBIA (Productos, Dashboard, etc) */}
                 </main>
+                {/* Bottom nav mobile */}
+                <nav className="md:hidden shrink-0 z-40 border-t border-[#E5D9D1] bg-white/95 backdrop-blur px-2 py-2 mobile-safe-bottom">
+                    <div className="grid grid-cols-5 gap-1">
+                        {mobileQuickNav.map((item) => {
+                            const Icon = item.icon;
+                            const isActive =
+                                location.pathname === item.path ||
+                                (item.path === '/dashboard' && location.pathname === '/dashboard/');
+
+                            return (
+                                <Link
+                                    key={item.path}
+                                    to={item.path}
+                                    className={`flex flex-col items-center justify-center gap-1 rounded-lg py-2 px-1 text-[11px] leading-tight ${
+                                        isActive
+                                            ? 'bg-[#F24452]/10 text-[#F24452] font-semibold'
+                                            : 'text-gray-600'
+                                    }`}
+                                >
+                                    <Icon className="h-4 w-4" />
+                                    <span className="truncate max-w-full">{item.label.split(' ')[0]}</span>
+                                </Link>
+                            );
+                        })}
+                    </div>
+                </nav>
             </div>
-
-            {/* Bottom nav mobile */}
-            <nav className="md:hidden shrink-0 z-40 border-t border-[#E5D9D1] bg-white/95 backdrop-blur px-2 py-2 mobile-safe-bottom">
-                <div className="grid grid-cols-5 gap-1">
-                    {mobileQuickNav.map((item) => {
-                        const Icon = item.icon;
-                        const isActive =
-                            location.pathname === item.path ||
-                            (item.path === '/dashboard' && location.pathname === '/dashboard/');
-
-                        return (
-                            <Link
-                                key={item.path}
-                                to={item.path}
-                                className={`flex flex-col items-center justify-center gap-1 rounded-lg py-2 px-1 text-[11px] leading-tight ${
-                                    isActive
-                                        ? 'bg-[#F24452]/10 text-[#F24452] font-semibold'
-                                        : 'text-gray-600'
-                                }`}
-                            >
-                                <Icon className="h-4 w-4" />
-                                <span className="truncate max-w-full">{item.label.split(' ')[0]}</span>
-                            </Link>
-                        );
-                    })}
-                </div>
-            </nav>
         </div>
     );
 }
