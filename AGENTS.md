@@ -146,6 +146,16 @@ Al agregar endpoints tenant: incluir `businessId` en query y validar pertenencia
 - Componentes UI base en `components/ui/` (shadcn) — evitar cambios globales innecesarios.
 - Alias `@/` → `src/`.
 
+### Regla obligatoria frontend (desktop + mobile)
+- Todo cambio que impacte UI/UX de frontend debe implementarse para **desktop y mobile**.
+- No se aceptan cambios solo para desktop o solo para mobile salvo pedido explícito del usuario.
+- En mobile, priorizar usabilidad táctil (targets cómodos, formularios legibles, sin overlays que tapen contenido).
+- Si una vista difiere por dispositivo (ej. Kanban vs lista), mantener **paridad funcional** entre ambas.
+- Antes de cerrar cambios frontend, validar al menos:
+  - viewport desktop (`md+`) y mobile (`<md`),
+  - navegación y scroll completos (sin contenido tapado),
+  - build frontend exitoso (`cd frontend && npm run build`).
+
 ### UI / diseño
 - Colores frecuentes: fondo `#F2EDE4`, bordes `#E5D9D1`, primario `#F24452`.
 - Modales anchos: el ancho lo define el consumidor en `DialogContent`, no el componente base.

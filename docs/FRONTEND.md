@@ -55,6 +55,14 @@ Definidas en `App.tsx`:
 
 - Layout principal: `layouts/DashboardLayout.tsx` (sidebar, navegación, logout).
 - Colores y patrones visuales descritos en [ai-context.md](./ai-context.md) (sección diseño).
+- Regla de implementación: todo cambio de frontend debe contemplar desktop + mobile (ver [responsive-frontend/ARQUITECTURA_TECNICA.md](./responsive-frontend/ARQUITECTURA_TECNICA.md)).
+
+## Criterio obligatorio desktop + mobile
+
+- Cualquier feature o ajuste visual nuevo debe validarse en ambos breakpoints.
+- Si se requiere UX distinta por dispositivo, se permite composición diferente, pero con paridad funcional.
+- Evitar soluciones que dependan de hover o interacciones de puntero para tareas críticas en mobile.
+- En mobile, confirmar que navegación inferior, modales y scroll no oculten contenido.
 
 ## Documentación específica CashShift
 

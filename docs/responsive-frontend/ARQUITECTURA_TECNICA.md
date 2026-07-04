@@ -161,6 +161,8 @@ Se ejecutaron dos etapas:
   - navegación mobile,
   - vista de lista mobile,
   - estrategia de formularios/diálogos.
+- Toda modificación frontend debe resolverse para desktop y mobile en la misma tarea, salvo que el usuario pida explícitamente lo contrario.
+- Si durante la implementación se detecta conflicto entre ambas experiencias, priorizar consistencia funcional y pedir confirmación del criterio UX.
 
 ---
 
